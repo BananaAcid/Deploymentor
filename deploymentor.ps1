@@ -23,7 +23,7 @@ param(
     [string]$AutoStart = '',
 
     [Parameter(Mandatory=$false, Position=2)]
-    [string]$ConfigFile = ".\data\config.ps1",
+    [string]$ConfigFile = "$PSScriptRoot\data\config.ps1",
 
     [Parameter(Mandatory=$false, Position=3)]
     [string]$Logs = "$PSScriptRoot\logs"
@@ -34,26 +34,45 @@ param(
 # do NOT use  -UseMinimalHeader  -> we want to know the user it was started with, in case of errors
 Start-Transcript -Path "$Logs\$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').log" -Append -ErrorAction SilentlyContinue | Out-Null
 
-# for anything to work, we need to be in the right dir
+# save current path
 $backupPWD = $PWD
-Set-Location $PSScriptRoot
 
 # config requirements
-. $ConfigFile
+#  always load as base config
+$ConfigFileBase = (Get-Item "$PSScriptRoot\data\config.ps1","$PSScriptRoot\config.ps1" -ErrorAction SilentlyContinue | Select-Object -First 1)
+. $ConfigFileBase
+# just "examples" is a special case
+if ($ConfigFile -eq "examples") { $ConfigFile = "$PSScriptRoot\examples\data\config.ps1" }
+# can be configured by the user (if its the same default one ... nothing happens)
+if ($ConfigFile) {
+    $configFile = $(if ([System.IO.Path]::IsPathRooted($configFile)) { $configFile } else { Join-Path $backupPWD $configFile })
 
-$PSD1 = Import-PowerShellDataFile .\Deploymentor.psd1 -ErrorAction SilentlyContinue
+    if (Test-Path $ConfigFile) {
+        $ConfigFile = Resolve-Path $ConfigFile
+        . $ConfigFile 
+    }
+    elseif ($ConfigFile -and -not (Test-Path $ConfigFile)) {
+        Write-Host "Config file not found: $ConfigFile" -ForegroundColor Red
+        Stop-Transcript
+        Exit 99
+    }
+}
+else {
+    # make sure, it is always set
+    $ConfigFile = $ConfigFileBase
+}
+
+# get version from psd1
+$PSD1 = Import-PowerShellDataFile $PSScriptRoot\Deploymentor.psd1 -ErrorAction SilentlyContinue
 $VERSION = If ($PSD1) { 'v' + $PSD1.ModuleVersion } Else { '' }
-
-
 Write-Host "Deploymentor $VERSION" -ForegroundColor Yellow
 
 # make sure, we are in the right dir
-Set-Location $PSScriptRoot
+# Set-Location $PSScriptRoot
 Write-Host "Working dir: $PWD"
 
-
 # ensure ps-modules dir exists
-if (!(Test-Path .\ps-modules)) { mkdir .\ps-modules | Out-Null }
+if (!(Test-Path $PSScriptRoot\ps-modules)) { mkdir $PSScriptRoot\ps-modules | Out-Null }
 # To be able to use a local module, because deploying the app on an USB stick
 # will need it and might not have internet access
 Function Find-LocalModulePath { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = ".\ps-modules" ) return ls "$Path\$Name" -ErrorAction SilentlyContinue | select -Last 1 |% FullName }
@@ -77,12 +96,15 @@ Function Write-ErrorClean { param( [Parameter(Mandatory=$false, Position=0, Valu
 # early config handling
 If (!$showConsole) { Hide-Console }
 
-# ensure cache dir exists
-if (!(Test-Path $dir.cache)) { mkdir $dir.cache | Out-Null }
+Write-Host "Config File: $ConfigFile"
 
-#resolve all paths
+# ensure cache dir exists
+$cacheDir = if ([System.IO.Path]::IsPathRooted($dir["cache"])) { $dir["cache"] } else { Join-Path (Split-Path $ConfigFile) $dir["cache"] }
+if (!(Test-Path $cacheDir)) { mkdir $cacheDir | Out-Null }
+
+#resolve all paths, relative to the config.ps1
 $dirAbs = @{}
-$dir.Keys |% { $dirAbs[$_] = Resolve-Path $dir[$_] -ErrorAction Stop }
+$dir.Keys |% { $dirAbs[$_] = Resolve-Path $(if ([System.IO.Path]::IsPathRooted($dir["$_"])) { $dir["$_"] } else { Join-Path (Split-Path $ConfigFile) $dir["$_"] }) -ErrorAction Stop }
 $dir = $dirAbs
 
 Write-Debug ("Config Dirs Resolved:" + ($dir | Format-Table | Out-String))
@@ -117,7 +139,7 @@ Function Load-ContextFns {
         Get-FnAsString Import-LocalModule   # requires Find-LocalModulePath
         # Get-FnAsString Get-LocalModule    # gets added by Import-LocalModule within context
         Get-FnAsString ConvertTo-NiceXml    # good to have
-        "Import-LocalModule XAMLgui -Path $(Resolve-Path .\ps-modules)"  # requires Import-LocalModule to be available
+        "Import-LocalModule XAMLgui -Path $(Join-Path $PSScriptRoot .\ps-modules -Resolve)"  # requires Import-LocalModule to be available
         'Enable-VisualStyles'
         Get-FnAsString Write-ErrorClean     # we make sure, we have an error handler that is able to be cought by transcript
     ) -join "`n"
@@ -280,7 +302,7 @@ function Deploymentor.MainWindow.cbActonsFirst_Checked($Sender1, $EventArgs1) {
 # load main gui
 
 # copy if it exists (we do not need the window dir when deploying this)
-Copy-Item .\window\MainWindow.xaml "$($dir.data)\MainWindow.xaml" -Force -ErrorAction SilentlyContinue # try or don't care
+Copy-Item $PSScriptRoot\window\MainWindow.xaml "$($dir.data)\MainWindow.xaml" -Force -ErrorAction SilentlyContinue # try or don't care
 $Elements,$MainWindow = . New-Window "$($dir.data)\MainWindow.xaml" # -Debug  # for debugging handlers and see error messages
 
 
@@ -544,7 +566,7 @@ Function Load-Software {
         $id = Resolve-Path $deploymentFilePath.FullName -Relative
         
         # add item
-        <# $pos = #> $Elements.lvSoftware.Items.Add([PSCustomObject]@{Id=$id; Title=$title; Description=$data.description; Folder="software"; FilePath=$(Resolve-Path  $item.FullName); FileName=$deploymentFilePath.Name; IsSelected=[bool]$isSelected; Icon=[string]$iconFile; Data=$data}) | Out-Null
+        <# $pos = #> $Elements.lvSoftware.Items.Add([PSCustomObject]@{Id=$id; Title=$title; Description=$data.description; Folder="software"; FilePath=$(Resolve-Path $item.FullName); FileName=$deploymentFilePath.Name; IsSelected=[bool]$isSelected; Icon=[string]$iconFile; Data=$data}) | Out-Null
     }
 }
 
@@ -1115,7 +1137,7 @@ Write-Host "Waiting for main window to close."
 $MainWindow | Show-Window
 
 # Return to previous location
-Set-Location $backupPWD
+#Set-Location $backupPWD
 
 # stop logging
 Stop-Transcript -ErrorAction SilentlyContinue
