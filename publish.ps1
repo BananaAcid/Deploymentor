@@ -15,7 +15,7 @@ git ls-files | ForEach-Object {
 
 Test-ModuleManifest -Path ".\build\Deploymentor.psd1"
 pause
-Publish-Module -Path ".\build" -NuGetApiKey $env:NUGET_API_KEY -Verbose -Exclude $list
+Publish-Module -Path ".\build" -NuGetApiKey $env:NUGET_API_KEY -Verbose
 
 Write-Host "Done - DELETE BUILD DIR?"  -ForegroundColor Red
 pause
