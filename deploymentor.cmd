@@ -1,0 +1,1 @@
+start powershell.exe -ExecutionPolicy Bypass -Command .\deploymentor.ps1 %1 %2 %3 %4 %5 %6; Read-Host  "Press Enter to continue ..."

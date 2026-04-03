@@ -1,0 +1,1 @@
+.\deploymentor.ps1 -Config .\examples\data\config.ps1 @args
