@@ -12,9 +12,6 @@ Publish-Module -Path ".\" -NuGetApiKey $env:NUGET_API_KEY -Verbose
 # find module
 Find-Module Deploymentor
 
-# install test
-Install-Module .\Deploymentor -Scope CurrentUser
-
 # Import test
 Import-Module .\Deploymentor
 #>

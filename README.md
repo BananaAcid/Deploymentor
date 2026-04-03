@@ -3,10 +3,24 @@
 <img width="49%" alt="Image" src="https://github.com/user-attachments/assets/d101f61e-2129-4e96-bf98-19fa9ad8bac1" />
 <img width="49%" alt="Image" src="https://github.com/user-attachments/assets/aba27bdc-13a3-42dd-8cc0-e411edff63a8" />
 
+## Installation into a system
 
-## Installation
+```powershell
+Install-Module Deploymentor ; Import-Module Deploymentor # only needed for the first run
 
-1. clone this repository or download as zip and extract
+Edit-Deploymentor -VSCode # without any param it will open the folder in explorer instead
+
+Start-Deploymentor  # -Config  and other params, see 'Usage' below
+# with example data
+Start-Deploymentor -Config .\examples\data\config.ps1  # config path is relative to the Deploymentor folder
+```
+
+## Installation as portable version
+
+1. get the folder, do either:
+    - clone this repository: `git clone https://github.com/BananaAcid/Deploymentor.git`
+    - download as zip and extract: [`https://github.com/BananaAcid/Deploymentor/archive/refs/heads/main.zip`](https://github.com/BananaAcid/Deploymentor/archive/refs/heads/main.zip)
+    - get it from PSGallery: `Save-Module Deploymentor -Path .\`
 
 2. *optionally:* configure `.\data\config.ps1`
 
@@ -26,10 +40,14 @@ Run with example data
 ## Usage
 
 ```powershell
-.\deploymentor [-Profile <0|index|name>] [-Config <".\data\config.ps1"|path>] [-Logs <".\logs">] [-Debug]
+.\deploymentor [-Profile <0|index|name>] [-Config <".\data\config.ps1"|path>] [-Logs <".\logs"|path>] [-Debug]
 ```
 
 `-Profile <name>` does pattern matching (using `-like`), so case does not matter and you could use `mainloc*`
+
+`-Config <path>` is relative to the Deploymentor folder
+
+`-Logs <path>` is relative to the Deploymentor folder
 
 `-Debug` outputs XAMLgui info
 

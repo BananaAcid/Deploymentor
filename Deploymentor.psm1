@@ -11,8 +11,34 @@
 
 # This is the Root Module that loads all components
 
-function Start-Deploymentor {
+
+
+<#
+.SYNOPSIS
+    Open the root folder of Deploymentor
+.PARAMETER VSCode
+    Open in Visual Studio Code
+#>
+Function Edit-Deploymentor {
+    [CmdletBinding()]
+    param ([Alias("Code")][switch]$VSCode)
+    
+    if ($VSCode) {
+        code $PSScriptRoot
+    }
+    else {
+        explorer $PSScriptRoot
+    }
+}
+
+
+<#
+.SYNOPSIS
+    Start Deploymentor
+#>
+Function Start-Deploymentor {
     . $PSScriptRoot\deploymentor.ps1 @args
 }
+
 
 Export-ModuleMember -Function *

@@ -85,7 +85,7 @@ $dirAbs = @{}
 $dir.Keys |% { $dirAbs[$_] = Resolve-Path $dir[$_] -ErrorAction Stop }
 $dir = $dirAbs
 
-Write-Debug ($dir | Format-Table | Out-String)
+Write-Debug ("Config Dirs Resolved:" + ($dir | Format-Table | Out-String))
 
 # usefull for actions/software
 $ctxBase =  @{
@@ -104,7 +104,7 @@ $script:ctx = New-ClonedObject $ctxBase
 $script:contextFNs = "" # set in Load-ContextFns, will pass helper functions to actions/apps
 
 #globals
-$profilesAvailable = @()
+$script:profilesAvailable = @()
 $Elements = $null
 $MainWindow = $null
 
@@ -343,13 +343,13 @@ Function Load-ProfileList {
     $cb.Items.Clear()
     $cb.AddText("")
 
-    if ($profilesAvailable.Count -eq 0) {
+    if ($script:profilesAvailable.Count -eq 0) {
         Write-ErrorClean "No profiles found in: $($dir.profiles)"
         $script:profilesAvailable = @()
         return
     }
 
-    Foreach ($file in $profilesAvailable) {
+    Foreach ($file in $script:profilesAvailable) {
         Write-Debug "Found profile: $file"
         
         $data = & $file
@@ -370,7 +370,7 @@ Function Load-Profile {
     $script:ctx = New-ClonedObject $ctxBase
     
     $realIndex = $Index - 1  # 0 => "ALL"
-    $currentProfile = $profilesAvailable[$realIndex]
+    $currentProfile = $script:profilesAvailable[$realIndex]
 
     $settings = if ($currentProfile) { & $currentProfile } else { @{} }
     
