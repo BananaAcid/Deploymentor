@@ -63,7 +63,7 @@ else {
 }
 
 # get version from psd1
-$PSD1 = Import-PowerShellDataFile $PSScriptRoot\Deploymentor.psd1 -ErrorAction SilentlyContinue
+$PSD1 = if (Get-Command Import-PowerShellDataFile -ErrorAction SilentlyContinue ) { Import-PowerShellDataFile "$PSScriptRoot\Deploymentor.psd1" -ErrorAction SilentlyContinue } else { & { Invoke-Expression (Get-Content -Path "$PSScriptRoot\Deploymentor.psd1" -Raw) } }
 $VERSION = If ($PSD1) { 'v' + $PSD1.ModuleVersion } Else { '' }
 Write-Host "Deploymentor $VERSION" -ForegroundColor Yellow
 

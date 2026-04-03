@@ -12,7 +12,7 @@ Edit-Deploymentor -VSCode # without any param it will open the folder in explore
 
 Start-Deploymentor  # -Config  and other params, see 'Usage' below
 # with example data
-Start-Deploymentor -Config .\examples\data\config.ps1  # config path is relative to to the current folder
+Start-Deploymentor -Config examples  # config path is relative to to the current folder
 ```
 
 ## Installation as portable version
@@ -40,12 +40,12 @@ Run with example data
 ## Usage
 
 ```powershell
-.\deploymentor [-Profile <0|index|name>] [-Config <".\data\config.ps1"|".\config.ps1"|path>] [-Logs <".\logs"|path>] [-Debug]
+.\deploymentor [-Profile <0|index|name>] [-Config <".\data\config.ps1"|".\config.ps1"|"examples"|path>] [-Logs <".\logs"|path>] [-Debug]
 ```
 
 `-Profile <name>` does pattern matching (using `-like`), so case does not matter and you could use `mainloc*`
 
-`-Config <path>` is relative to your current folder; Deploymenter looks for ".\data\config.ps1" then ".\config.ps1" and loads it as base config, then loads the config from param on top
+`-Config <path>` is relative to your current folder; Deploymenter looks for ".\data\config.ps1" then ".\config.ps1" and loads it as base config, then loads the config from param on top. `"examples"` is a special value that loads the examples config.
 
 `-Logs <path>` is getting a log for each start
 
