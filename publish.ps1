@@ -7,15 +7,15 @@ $env:DOTNET_CLI_UI_LANGUAGE="en_US"
 # create build dir
 Write-Host "Creating build dir" -ForegroundColor Yellow
 git ls-files | ForEach-Object { 
-    $fullPath = Join-Path -Path 'build' -ChildPath $_
+    $fullPath = Join-Path -Path 'build\Deploymentor' -ChildPath $_
     $folderPath = Split-Path -Path $fullPath -Parent
     mkdir $folderPath -Force -ErrorAction SilentlyContinue | Out-Null
     Copy-Item -Path $_ -Destination $fullPath
 }
 
-Test-ModuleManifest -Path ".\build\Deploymentor.psd1"
+Test-ModuleManifest -Path ".\build\Deploymentor\Deploymentor.psd1"
 pause
-Publish-Module -Path ".\build" -NuGetApiKey $env:NUGET_API_KEY -Verbose
+Publish-Module -Path ".\build\Deploymentor" -NuGetApiKey $env:NUGET_API_KEY -Verbose
 
 Write-Host "Done - DELETE BUILD DIR?"  -ForegroundColor Red
 pause
