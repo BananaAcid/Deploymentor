@@ -9,6 +9,8 @@ test-*.*
 *.code-workspace
 test-*
 test-*.*
+build
+dist
 
 # these will be generated when run at least once
 data/MainWindow.xaml
