@@ -1,20 +1,25 @@
 # Fix for -> Write-Error: Failed to generate the compressed file for module 'Cannot index into a null array.'.
 $env:DOTNET_CLI_UI_LANGUAGE="en_US"
 
-# pack all files from this repo
-Update-ModuleManifest -Path ".\Deploymentor.psd1" -FileList $(git ls-files | ForEach-Object { Get-Item "$_" })
+# pack all files from this repo -- no use ..
+#Update-ModuleManifest -Path ".\Deploymentor.psd1" -FileList $(git ls-files | ForEach-Object { Get-Item "$_" })
 
-Test-ModuleManifest -Path ".\Deploymentor.psd1"
+# create build dir
+Write-Host "Creating build dir" -ForegroundColor Yellow
+git ls-files | ForEach-Object { 
+    $fullPath = Join-Path -Path 'build' -ChildPath $_
+    $folderPath = Split-Path -Path $fullPath -Parent
+    mkdir $folderPath -Force -ErrorAction SilentlyContinue | Out-Null
+    Copy-Item -Path $_ -Destination $fullPath
+}
+
+Test-ModuleManifest -Path ".\build\Deploymentor.psd1"
 pause
-Publish-Module -Path ".\" -NuGetApiKey $env:NUGET_API_KEY -Verbose
+Publish-Module -Path ".\build" -NuGetApiKey $env:NUGET_API_KEY -Verbose -Exclude $list
 
-<#
-# find module
-Find-Module Deploymentor
-
-# Import test
-Import-Module .\Deploymentor
-#>
+Write-Host "Done - DELETE BUILD DIR?"  -ForegroundColor Red
+pause
+Remove-Item -r -fo .\build
 
 
 
@@ -46,9 +51,15 @@ New-ModuleManifest -Path ".\Deploymentor.psd1" `
 
 #>
 
+
 <#
-xaml gui visual-studio dotnet powershell wpf desktop-application rapid-prototyping powershell-module ui-framework xaml-gui
+# find module
+Find-Module Deploymentor
+
+# Import test
+Import-Module .\Deploymentor
 #>
+
 
 <#
 Invoke-PS2EXE -InputFile "MyScript.ps1" -OutputFile "MyApp.exe" -Title "Custom Title" -Description "My Branded App"

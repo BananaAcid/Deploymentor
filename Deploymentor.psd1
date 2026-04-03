@@ -12,7 +12,7 @@
 RootModule = 'Deploymentor.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.0'
+ModuleVersion = '1.2.1'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Desktop', 'Core'
@@ -87,68 +87,7 @@ AliasesToExport = '*'
 # ModuleList = @()
 
 # List of all files packaged with this module
-FileList = '.gitignore', 'Deploymentor.psd1', 'Deploymentor.psm1', 'LICENSE', 
-               'README.md', 'actions\_scripted actions go here', 
-               'data\_UI files and logic goes here', 'data\config.ps1', 
-               'data\default-app.png', 'deploymentor-example.cmd', 
-               'deploymentor-example.ps1', 'deploymentor.cmd', 'deploymentor.ps1', 
-               'examples\actions\Action Minimal.ps1', 
-               'examples\actions\_scripted actions go here', 
-               'examples\actions\add admin groups.ps1', 
-               'examples\actions\add user as admin.ps1', 
-               'examples\actions\admin privileges required.ps1', 
-               'examples\actions\disable iv6.ps1', 
-               'examples\actions\install dell bios patch and restart.ps1', 
-               'examples\actions\msg plug cable.ps1', 
-               'examples\actions\open cumputername dialog.ps1', 
-               'examples\actions\remove admin user.ps1', 
-               'examples\actions\remove default apps.ps1', 
-               'examples\actions\remove unneded c dirs.ps1', 
-               'examples\actions\require admin by dialog.ps1', 
-               'examples\actions\require admin.ps1', 
-               'examples\actions\restart with admin privileges.ps1', 
-               'examples\actions\run telemetry tool.ps1', 
-               'examples\actions\service files patch.ps1', 
-               'examples\actions\service files\dummy.txt', 
-               'examples\actions\set important env.ps1', 
-               'examples\actions\set new Administrator PW.ps1', 
-               'examples\actions\show message.ps1', 'examples\data\config.ps1', 
-               'examples\data\default-app.png', 
-               'examples\profiles\MainLocation.ps1', 
-               'examples\profiles\any PS1 here will define a list of software an actions to be in the lists', 
-               'examples\profiles\location one.ps1', 
-               'examples\profiles\location two.ps1', 
-               'examples\software\7Zip\install.ps1', 
-               'examples\software\AcrobatReader\install.ps1', 
-               'examples\software\BIOS\install.ps1', 
-               'examples\software\HardCopy (free)\Einstellungen verteilen - sichern - wiederherstellen.url', 
-               'examples\software\HardCopy (free)\hardcopy_config.ini', 
-               'examples\software\HardCopy (free)\install.ps1', 
-               'examples\software\OOSU10\export.cfg', 
-               'examples\software\OOSU10\install.ps1', 
-               'examples\software\_any software or just a PS1 install script to call a network file goes here in its folder with an install.ps1 file', 
-               'examples\software\dump direct\deploy.ps1', 
-               'examples\software\empty\nothing.txt', 
-               'examples\software\hello world\deploy.vbs', 
-               'examples\tools\ADD to RUN ONCE.ps1', 
-               'examples\tools\Networkconnections.lnk', 
-               'examples\tools\SystemPropertiesComputerName.lnk', 
-               'examples\tools\_.anything here will be added as button (PS1, msc, exe, txt, ...)', 
-               'examples\tools\dump ctx.lastActionRet.x.ps1', 
-               'examples\tools\lusrmgr.msc.lnk', 'examples\tools\test waiting.ps1', 
-               'examples\tools\test waiting.x.ps1', 
-               'profiles\any PS1 here will define a list of software an actions to be in the lists', 
-               'publish.ps1', 
-               'software\_any software or just a PS1 install script to call a network file goes here in its folder with an install.ps1 file', 
-               'tools\_.anything here will be added as button (PS1, msc, exe, txt, ...)', 
-               'window\App.config', 'window\App.xaml', 'window\App.xaml.cs', 
-               'window\DeploymentorUI.csproj', 'window\DeploymentorUI.sln', 
-               'window\MainWindow.xaml', 'window\MainWindow.xaml.cs', 
-               'window\Properties\AssemblyInfo.cs', 
-               'window\Properties\Resources.Designer.cs', 
-               'window\Properties\Resources.resx', 
-               'window\Properties\Settings.Designer.cs', 
-               'window\Properties\Settings.settings', 'window\default-app.png'
+# FileList = @()
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
