@@ -5,6 +5,7 @@ $env:DOTNET_CLI_UI_LANGUAGE="en_US"
 #Update-ModuleManifest -Path ".\Deploymentor.psd1" -FileList $(git ls-files | ForEach-Object { Get-Item "$_" })
 
 # create build dir
+Remove-Item -r -fo .\build -ErrorAction SilentlyContinue
 Write-Host "Creating build dir" -ForegroundColor Yellow
 git ls-files | ForEach-Object { 
     $fullPath = Join-Path -Path 'build\Deploymentor' -ChildPath $_
