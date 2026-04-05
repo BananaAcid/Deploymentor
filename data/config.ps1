@@ -3,12 +3,12 @@
 
 $darkMode = $true
 
-# paths are relative to this config
+# paths are relative to this config, these paths are absolutely required to exist
 $dir = @{
     data = "..\data"
-    cache = "..\data\cache"
-    profiles = "..\profiles"
+    cache = "..\data\cache"  # will be created if missing, could be $env:TEMP but a local path is better for portable use
 
+    profiles = "..\profiles"
     actions = "..\actions"
     software = "..\software"
     tools = "..\tools"
@@ -50,7 +50,7 @@ $softwareInstallers = @{
 $contextFormat = @{
     "deploy.ps1" = "native" # special case - software installer runs in same session
     ".ps1" = "nativefile"   # is a temp xmlfile with types to be able to convert it back (using Import-CliXml) - relevant for tools - they run in a separate session
-    ".x.ps1" = "native"     # tool in same session -- like an action or software
+    ".x.ps1" = "native"     # tool in same session -- works like an action or software (should be avoided)
     ".vbs" = "xml"          # xml str as param 1 to script (probably buggy)
     ".wsf" = "xml"          # xml str as param 1 to script (probably buggy)
     ".js"  = "json"         # json str as param 1 (probably buggy)
