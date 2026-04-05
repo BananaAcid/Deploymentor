@@ -34,8 +34,21 @@ param(
 # do NOT use  -UseMinimalHeader  -> we want to know the user it was started with, in case of errors
 Start-Transcript -Path "$Logs\$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').log" -Append -ErrorAction SilentlyContinue | Out-Null
 
+# we need a variant, that works with transcript - but we ignore the error pipeline. Overwrite the one from XAMLgui.
+Function Write-ErrorClean { param( [Parameter(Mandatory=$false, Position=0, ValueFromPipeline=$true)] [String] $Message, [Parameter(Mandatory=$false, Position=1)] [String] $ForegroundColor = $Host.PrivateData.ErrorForegroundColor <# ='Red'#> ); Write-Host "ERROR: $Message" -ForegroundColor $ForegroundColor; }
+
 # save current path
-$backupPWD = $PWD
+$callingFromPWD = $PWD
+
+# get version from psd1
+$PSD1 = if (Get-Command Import-PowerShellDataFile -ErrorAction SilentlyContinue ) { Import-PowerShellDataFile "$PSScriptRoot\Deploymentor.psd1" -ErrorAction SilentlyContinue } else { & { Invoke-Expression (Get-Content -Path "$PSScriptRoot\Deploymentor.psd1" -Raw) } }
+$VERSION = If ($PSD1) { 'v' + $PSD1.ModuleVersion } Else { '' }
+Write-Host "Deploymentor $VERSION" -ForegroundColor Yellow
+
+# make sure, we are in the right dir
+# Set-Location $PSScriptRoot
+Write-Host "Working dir: $PWD"
+
 
 # config requirements
 #  always load as base config
@@ -45,7 +58,7 @@ $ConfigFileBase = (Get-Item "$PSScriptRoot\data\config.ps1","$PSScriptRoot\confi
 if ($ConfigFile -eq "examples") { $ConfigFile = "$PSScriptRoot\examples\data\config.ps1" }
 # can be configured by the user (if its the same default one ... nothing happens)
 if ($ConfigFile) {
-    $configFile = $(if ([System.IO.Path]::IsPathRooted($configFile)) { $configFile } else { Join-Path $backupPWD $configFile })
+    $configFile = $(if ([System.IO.Path]::IsPathRooted($configFile)) { $configFile } else { Join-Path $callingFromPWD $configFile })
 
     if (Test-Path $ConfigFile) {
         $ConfigFile = Resolve-Path $ConfigFile
@@ -62,41 +75,14 @@ else {
     $ConfigFile = $ConfigFileBase
 }
 
-# get version from psd1
-$PSD1 = if (Get-Command Import-PowerShellDataFile -ErrorAction SilentlyContinue ) { Import-PowerShellDataFile "$PSScriptRoot\Deploymentor.psd1" -ErrorAction SilentlyContinue } else { & { Invoke-Expression (Get-Content -Path "$PSScriptRoot\Deploymentor.psd1" -Raw) } }
-$VERSION = If ($PSD1) { 'v' + $PSD1.ModuleVersion } Else { '' }
-Write-Host "Deploymentor $VERSION" -ForegroundColor Yellow
-
-# make sure, we are in the right dir
-# Set-Location $PSScriptRoot
-Write-Host "Working dir: $PWD"
-
-# ensure ps-modules dir exists
-if (!(Test-Path $PSScriptRoot\ps-modules)) { mkdir $PSScriptRoot\ps-modules | Out-Null }
-# To be able to use a local module, because deploying the app on an USB stick
-# will need it and might not have internet access
-Function Find-LocalModulePath { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = "$PSScriptRoot\ps-modules" ) return ls "$Path\$Name" -ErrorAction SilentlyContinue | select -Last 1 |% FullName }
-Function Import-LocalModule { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = "$PSScriptRoot\ps-modules", [Boolean] $Download = $True ) if (-not (Find-LocalModulePath $Name -Path $Path) -and $Download) { Save-Module -Name $Name -Path $Path } $fullPath = Find-LocalModulePath $Name -Path $Path; if (-not $fullPath) { Write-Error "Unable to find $Name module, could not download. Aborting."; Exit 99 } Import-Module (Join-Path $fullPath $Name); }
-Function Get-LocalModule { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = "$PSScriptRoot\ps-modules", [Boolean] $Download = $True ) if (-not (Find-LocalModulePath $Name -Path $Path) -and $Download) { Save-Module -Name $Name -Path $Path } $fullPath = Find-LocalModulePath $Name -Path $Path; if (-not $fullPath) { Write-Error "Unable to find $Name module, could not download. Aborting."; Exit 99 } return $fullPath; }
-
-## DO NOT USE THIS
-## We use a local version of the XAMLgui module, because deploying the app on an USB stick
-## will need it and might not have internet access
-###Import-LocalModule XAMLgui
-
-#! Dev - use Dev version of XAMLgui
-if (Test-Path -Path ..\XAMLgui\XAMLgui) { ls "..\XAMLgui\XAMLgui\*.ps1" |% { . $_.FullName } }
-#! import the module functions into the current session
-#! we do not import, because the handlers are not picked up -- TODO: FIX this.
-else { ls "$(Get-LocalModule XAMLgui)\*.ps1" |% { . $_.FullName } }
-
-# we need a variant, that works with transcript - but we ignore the error pipeline. Overwrite the one from XAMLgui.
-Function Write-ErrorClean { param( [Parameter(Mandatory=$false, Position=0, ValueFromPipeline=$true)] [String] $Message, [Parameter(Mandatory=$false, Position=1)] [String] $ForegroundColor = $Host.PrivateData.ErrorForegroundColor <# ='Red'#> ); Write-Host "ERROR: $Message" -ForegroundColor $ForegroundColor; }
+Write-Host "Config File: $ConfigFile"
 
 # early config handling
 If (!$showConsole) { Hide-Console }
 
-Write-Host "Config File: $ConfigFile"
+
+# --- Dirs based on config handling -------------------------------
+
 
 # ensure cache dir exists
 $cacheDir = if ([System.IO.Path]::IsPathRooted($dir["cache"])) { $dir["cache"] } else { Join-Path (Split-Path $ConfigFile) $dir["cache"] }
@@ -109,6 +95,34 @@ $dir = $dirAbs
 
 Write-Debug ("Config Dirs Resolved:" + ($dir | Format-Table | Out-String))
 
+
+# --- XAMLgui import -------------------------------
+
+
+# To be able to use a local module, because deploying the app on an USB stick
+# will need it and might not have internet access
+Function Find-LocalModulePath { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = ".\ps-modules" ) return ls "$Path\$Name" -ErrorAction SilentlyContinue | select -Last 1 |% FullName }
+Function Import-LocalModule { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = ".\ps-modules", [Boolean] $Download = $True ) if (-not (Find-LocalModulePath $Name -Path $Path) -and $Download) { Save-Module -Name $Name -Path $Path } $fullPath = Find-LocalModulePath $Name -Path $Path; if (-not $fullPath) { Write-Error "Unable to find $Name module, could not download. Aborting."; Exit 99 } Write-Host "Importing $Name module from $fullPath"; Import-Module (Join-Path $fullPath $Name); }
+Function Get-LocalModule { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = ".\ps-modules", [Boolean] $Download = $True ) if (-not (Find-LocalModulePath $Name -Path $Path) -and $Download) { Save-Module -Name $Name -Path $Path } $fullPath = Find-LocalModulePath $Name -Path $Path; if (-not $fullPath) { Write-Error "Unable to find $Name module, could not download. Aborting."; Exit 99 } return $fullPath; }
+
+# ensure ps-modules dir exists
+if (!(Test-Path $dir.psmodules)) { mkdir $dir.psmodules | Out-Null }
+
+## DO NOT USE THIS
+## We use a local version of the XAMLgui module, because deploying the app on an USB stick
+## will need it and might not have internet access
+###Import-LocalModule XAMLgui
+
+#! Dev - use Dev version of XAMLgui
+if (Test-Path -Path "$PSScriptRoot\..\XAMLgui\XAMLgui") { ls "$PSScriptRoot\..\XAMLgui\XAMLgui\*.ps1" |% { . $_.FullName } }
+#! import the module functions into the current session
+#! we do not import, because the handlers are not picked up -- TODO: FIX this.
+else { ls "$(Get-LocalModule XAMLgui -Path $dir.psmodules)\*.ps1" |% { . $_.FullName } }
+
+
+# --- Context preperation -------------------------------
+
+
 # usefull for actions/software
 $ctxBase =  @{
     dir = $dir          # == config.ps1 > $dir
@@ -117,6 +131,11 @@ $ctxBase =  @{
         Title = $null   # the displayed title
         Data = $null    # the profile files returned settings content
         Index = 0       # the index of the currently selected profile
+    }
+    deploymentor = @{           # data of the currently running deploymentor
+        Root = $PSScriptRoot    # installation root folder
+        File = $PSCommandPath   # installation filename path
+        Version = $VERSION      # deploymentor version, if available
     }
     item = $null        # @{ Folder = $dir.software; FilePath; FileName; }
     doCancel = $false   # setting this will abort any actions/software in queue
@@ -130,8 +149,6 @@ $script:profilesAvailable = @()
 $Elements = $null
 $MainWindow = $null
 
-
-
 Function Load-ContextFns {
     # get functions into context (Actions, Software)
     $script:contextFNs = @(
@@ -139,15 +156,20 @@ Function Load-ContextFns {
         Get-FnAsString Import-LocalModule   # requires Find-LocalModulePath
         # Get-FnAsString Get-LocalModule    # gets added by Import-LocalModule within context
         Get-FnAsString ConvertTo-NiceXml    # good to have
-        "Import-LocalModule XAMLgui -Path $(Join-Path $PSScriptRoot .\ps-modules -Resolve)"  # requires Import-LocalModule to be available
+        "Import-LocalModule XAMLgui -Path `"$(Join-Path $PSScriptRoot .\ps-modules -Resolve)`""  # requires Import-LocalModule to be available
         'Enable-VisualStyles'
         Get-FnAsString Write-ErrorClean     # we make sure, we have an error handler that is able to be cought by transcript
     ) -join "`n"
 }
 
 
-# --- UI Event-Handlers -------------------------------
+#! DEBUG ---------------------------------------------------- =========================
+# Load-ContextFns
+# $script:contextFNs
+# exit
 
+
+# --- UI Event-Handlers -------------------------------
 
 
 # handler - have to be available before loading form
@@ -187,6 +209,7 @@ function Deploymentor.MainWindow.CbProfileSelect_SelectionChanged($Sender1, $Eve
     else {
         Write-Host "Profile selected: none" -ForegroundColor Green
     }
+
     Load-Profile -Index $s.SelectedIndex -Title $s.SelectedValue
     Reset-Progressbars
 }
@@ -255,7 +278,6 @@ function Deploymentor.MainWindow.LvTools_SelectionChanged($Sender1, $EventArgs1)
     Invoke-Tool $item
 }
 
-Add-KnownEvents "PreviewMouseRightButtonDown"
 $script:lvSoftwareLastClicked = $null
 function Deploymentor.MainWindow.lvSoftware_PreviewMouseRightButtonDown($Sender1, $EventArgs1) {
     $e = [System.Windows.Input.MouseButtonEventArgs]$EventArgs1
@@ -297,6 +319,13 @@ function Deploymentor.MainWindow.cbActonsFirst_Checked($Sender1, $EventArgs1) {
     }
 }
 
+$didRunAutoStart = $false
+function Deploymentor.MainWindow.Window_ContentRendered($Sender1, $EventArgs1) {
+    if ($didRunAutoStart) { return }
+    $didRunAutoStart = $true
+
+    Handle-AutoStart
+}
 
 
 # load main gui
@@ -309,26 +338,20 @@ $Elements,$MainWindow = . New-Window "$($dir.data)\MainWindow.xaml" # -Debug  # 
 # --- Main functions ------------------------------------------
 
 
-Function Set-ActionsBeforeSoftware {
-    param (
-        $actionsFirst = $true
-    )
-
-    $Elements.cbActonsFirst.IsChecked = $actionsFirst -eq $true
-}
-
-
+# Preselect by param if available
 Function Load-ProfileByParam {
     Param( $profileName )
     
-    # Preselect by param if available
-    $cb = [System.Windows.Controls.ComboBox]$Elements.CbProfileSelect
+    # if no profile name is given or -1 or ""    
     if ($null -eq $profileName -or "" -eq $profileName -or -1 -eq $profileName) {
         # force 0 to trigger a select on the item -> this triggers a change event and is cought as a profile change -> Load-Profile -> Load-Actions, ... 
         #   otherwise it is -1 and will not trigger the event / load the profile
-        $profileName = 0 
+        $profileName = 0
     } 
-
+    
+    # ref to the combobox
+    $cb = [System.Windows.Controls.ComboBox]$Elements.CbProfileSelect
+    
     # Try to parse the string to an integer
     if ([int]::TryParse($profileName, [ref]$null)) {
         if ($profileName -ge $script:profilesAvailable.Count) {
@@ -337,7 +360,7 @@ Function Load-ProfileByParam {
             }
             $profileName = 0
         }
-        $cb.SelectedIndex = [int]$profileName
+        $cb.SelectedIndex = [int]$profileName # this will trigger a change event -> Profile load
     }
     else {
         # find the correct filename -> is the profile name
@@ -347,7 +370,7 @@ Function Load-ProfileByParam {
             $cb.SelectedIndex = 0
         }
         else {
-            $cb.SelectedItem = $profileNameNew
+            $cb.SelectedItem = $profileNameNew # this will trigger a change event -> Profile load
         }
     } 
 }
@@ -391,19 +414,26 @@ Function Load-Profile {
     # fresh ctx
     $script:ctx = New-ClonedObject $ctxBase
     
-    $realIndex = $Index - 1  # 0 => "ALL"
-    $currentProfile = $script:profilesAvailable[$realIndex]
+    # $var[0 -1] wraps around !!! ... result is not null
+    # combobox idx 0 == "ALL" (empty item), profile arr starts in combobox at idx 1
+    $realIndex = $Index - 1
+    if ($realIndex -ge 0) {
+        $currentProfile = $script:profilesAvailable[$realIndex]
+    }
+    else {
+        $currentProfile = $null
+    }
 
     $settings = if ($currentProfile) { & $currentProfile } else { @{} }
     
     # store current profile to be used by any script
     $ctx.activeProfile = @{
         File = $currentProfile
-        Title = $title
+        Title = $title # optional $settings.Title was already handled by loading the list and passed in $Title
         Data = $Settings
         Index = $realIndex
     }
-    
+
     Set-ActionsBeforeSoftware ($null -eq $Settings.actionsFirst -or $Settings.actionsFirst -eq $true)
     # check:   $ctx.activeProfile.Data.actionsFirst -ne $false
     
@@ -772,6 +802,40 @@ Function Load-Tools {
 }
 
 
+
+
+
+Function Handle-AutoStart {
+    $AutoStart = $AutoStart.ToLower()
+
+    if ($AutoStart -and ($AutoStart -ne 'none')) {
+        Write-Host "AutoStart: $AutoStart"
+    }
+
+    switch ($AutoStart) {
+        'actions' { 
+            Deploymentor.MainWindow.DoInstallActions_Click('AutoStart')
+        }
+        'software' {
+            Deploymentor.MainWindow.DoInstallSoftware_Click('AutoStart')
+        }
+        'all' {
+            Deploymentor.MainWindow.doInstallAll_Click('AutoStart')
+        }
+        'none' {}
+        Default {}
+    }
+}
+
+Function Set-ActionsBeforeSoftware {
+    param (
+        $actionsFirst = $true
+    )
+
+    $Elements.cbActonsFirst.IsChecked = $actionsFirst -eq $true
+}
+
+
 Function Prepare-Window {
     $MainWindow.title = "Deploymentor $VERSION"
 }
@@ -1048,39 +1112,7 @@ Function Invoke-Tool {
 }
 
 
-Function Handle-AutoStart {
-    $AutoStart = $AutoStart.ToLower()
-
-    if ($AutoStart -and ($AutoStart -ne 'none')) {
-        Write-Host "AutoStart: $AutoStart"
-    }
-
-    switch ($AutoStart) {
-        'actions' { 
-            Deploymentor.MainWindow.DoInstallActions_Click('AutoStart')
-        }
-        'software' {
-            Deploymentor.MainWindow.DoInstallSoftware_Click('AutoStart')
-        }
-        'all' {
-            Deploymentor.MainWindow.doInstallAll_Click('AutoStart')
-        }
-        'none' {}
-        Default {}
-    }
-}
-
-$didRunAutoStart = $false
-$MainWindow.Add_ContentRendered({
-    if ($didRunAutoStart) { return }
-    $didRunAutoStart = $true
-
-    Handle-AutoStart
-})
-
-
 # --- Titlebar Darkmode --------------------------
-
 
 
 Function Set-DarkModeTitlebar {
@@ -1142,7 +1174,7 @@ Write-Host "Waiting for main window to close."
 $MainWindow | Show-Window
 
 # Return to previous location
-#Set-Location $backupPWD
+#Set-Location $callingFromPWD
 
 # stop logging
 Stop-Transcript -ErrorAction SilentlyContinue

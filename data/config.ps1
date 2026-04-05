@@ -12,6 +12,8 @@ $dir = @{
     actions = "..\actions"
     software = "..\software"
     tools = "..\tools"
+
+    psmodules = "..\ps-modules" # will be created if missing, defaults to Deploymenter's installation dir .\ps-modules
 }
 
 # when showing the button caption, remove the extension from the displayed caption

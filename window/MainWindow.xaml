@@ -7,7 +7,9 @@
     mc:Ignorable="d"
     Title="Deploymentor" Height="600" Width="1350" WindowStartupLocation="CenterScreen"
     Style="{DynamicResource WindowStyle}"
-    Tag="{Binding ElementName=tglDarkMode, Path=IsChecked, Mode=OneWay, FallbackValue=False}">
+    Tag="{Binding ElementName=tglDarkMode, Path=IsChecked, Mode=OneWay, FallbackValue=False}"
+    ContentRendered="Window_ContentRendered"
+    >
 
     <Window.Resources>
         <!-- Global Dark Mode Window Style -->
