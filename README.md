@@ -59,7 +59,7 @@ Params:
     `.\actions\Continue Phase 2.ps1`:
         ```powershell
         @{
-            Title = "User`nPassowrd"  # User will be next to Value and because of the newline, Password next to Value2
+            Title = "User`nPassword"  # User will be next to Value and because of the newline, Password next to Value2
             Description = "Continue Phase 2"
 
             hasValue = $true
@@ -154,9 +154,8 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
     ```ps1
     return @{
 
-        # newline `n is required, if you want to output 2 lables (1st row for first inputbox, 2nd row for second inputbox)
-
-        title = "Title`nMessage" #optional: if not given, the files's name is used
+        # newline `n can be used, if you want to output 2 lables (1st row for first inputbox, 2nd row for second inputbox) with just 1 title.
+        title = "Title`nMessage" #optional: if not given, the files's name is used. If newline is used, It gets split into tile and title2
 
         description = "Shows a messagebox" #optional: detault is empty
 
@@ -165,6 +164,7 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
         hasValue = $TRUE   #optional: shows a text field next to the value
         Value = "Title"  #optional: if given, the textbox will be prefilled
 
+        #title2 = "Message" #optional: shows a title for this value
         hasValue2 = $TRUE   #optional: shows a text field next to the value
         Value2 = "Message"  #optional: if given, the textbox will be prefilled
 

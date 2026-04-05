@@ -724,11 +724,13 @@
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
-                                            <TextBlock Grid.RowSpan="2" Grid.Row="0" Text="{Binding Title}" LineHeight="20" FontWeight="Bold" />
+                                            <TextBlock Grid.Column="0" Grid.Row="0" Text="{Binding Title}" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
+                                            <TextBlock Grid.Column="0" Grid.Row="1" Text="{Binding Title2}" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="{Binding TextBoxVisibility2}" />
+
                                             <TextBox Grid.Column="1" Grid.Row="0" x:Name="tbValue" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="{Binding TextBoxVisibility}" Text="{Binding Value}" />
                                             <TextBox Grid.Column="1" Grid.Row="1" x:Name="tbValue2" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="{Binding TextBoxVisibility2}" Text="{Binding Value2}" />
                                         </Grid>
-                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="11" Visibility="{Binding DescriptionVisibility}" />
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="11" Visibility="{Binding DescriptionVisibility}" Margin="0,5,0,0"  />
                                     </StackPanel>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -744,11 +746,14 @@
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Grid.RowSpan="2" Grid.Row="0" Text="Some Title&#x0a;row2" LineHeight="20" FontWeight="Bold"/>
+
+                                        <TextBlock Grid.Column="0" Grid.Row="0" Text="Some Title&#x0a;row2" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
+                                        <TextBlock Grid.Column="0" Grid.Row="1" Text="row2" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
+                                        
                                         <TextBox Grid.Column="1" Grid.Row="0" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="Visible" Text="abcd" />
                                         <TextBox Grid.Column="1" Grid.Row="1" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="Visible" Text="efgh" />
                                     </Grid>
-                                    <TextBlock Text="Some description .. use `n in PS as newline" TextWrapping="Wrap" FontSize="11" Visibility="Visible" />
+                                    <TextBlock Text="Some description .. use `n in PS as newline" TextWrapping="Wrap" FontSize="11" Visibility="Visible" Margin="0,5,0,0" />
                                 </StackPanel>
                             </ListViewItem>
 
@@ -763,13 +768,54 @@
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Grid.RowSpan="2" Grid.Row="0" Text="Some Title" LineHeight="20" FontWeight="Bold" />
+                                        <TextBlock Grid.Column="0" Grid.Row="0" Text="Some Title" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
+                                        <TextBlock Grid.Column="0" Grid.Row="1" Text="row 2" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Collapsed" />
                                         <TextBox Grid.Column="1" Grid.Row="0" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="Visible" Text="abcd" />
                                         <TextBox Grid.Column="1" Grid.Row="1" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="Collapsed" Text="efgh" />
                                     </Grid>
-                                    <TextBlock Text="Some description .. use `n in PS as newline" TextWrapping="Wrap" FontSize="11" Visibility="Visible" />
+                                    <TextBlock Text="Some description .. use `n in PS as newline" TextWrapping="Wrap" FontSize="11" Visibility="Visible" Margin="0,5,0,0"  />
                                 </StackPanel>
                             </ListViewItem>
+                            <ListViewItem>
+                                <StackPanel Margin="5,5,25,5">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Column="0" Grid.Row="0" Text="Some Title" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
+                                        <TextBlock Grid.Column="0" Grid.Row="1" Text="row 2" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Collapsed" />
+                                        <TextBox Grid.Column="1" Grid.Row="0" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}, Mode=FindAncestor}}" Visibility="Collapsed" Text="abcd" />
+                                        <TextBox Grid.Column="1" Grid.Row="1" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}, Mode=FindAncestor}}" Visibility="Collapsed" Text="efgh" />
+                                    </Grid>
+                                    <TextBlock Text="Some description .. use `n in PS as newline" TextWrapping="Wrap" FontSize="11" Visibility="Visible" Margin="0,5,0,0"  />
+                                </StackPanel>
+                            </ListViewItem>
+                            <ListViewItem>
+                                <StackPanel Margin="5,5,25,5">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Column="0" Grid.Row="0" Text="Some Title" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
+                                        <TextBlock Grid.Column="0" Grid.Row="1" Text="row 2" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Collapsed" />
+                                        <TextBox Grid.Column="1" Grid.Row="0" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}, Mode=FindAncestor}}" Visibility="Collapsed" Text="abcd" />
+                                        <TextBox Grid.Column="1" Grid.Row="1" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource AncestorType={x:Type ListViewItem}, Mode=FindAncestor}}" Visibility="Collapsed" Text="efgh" />
+                                    </Grid>
+                                    <TextBlock Text="Some description .. use `n in PS as newline" TextWrapping="Wrap" FontSize="11" Visibility="Collapsed" Margin="0,5,0,0"  />
+                                </StackPanel>
+                            </ListViewItem>
+                            
+
                         </ListView>
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Stretch" Margin="10,10,10,10">

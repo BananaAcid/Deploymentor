@@ -655,11 +655,6 @@ Function Load-Actions {
         # load data from file item
         $data = & $item.FullName
         
-        $title = $item.BaseName
-        If ($null -ne $data.title) {
-            $title = $data.title
-        }
-        
         $descriptionVisibility = "Visible"
         if (!$data.description) {
             $descriptionVisibility = "Collapsed"
@@ -701,6 +696,13 @@ Function Load-Actions {
             }
         }
         
+        $title = $item.BaseName
+        If ($null -ne $data.title) {
+            $title = $data.title
+        }
+        if ($textBoxVisibility2 -eq "Visible" -and ($null -eq $data.title2) -and $title -match "`n") {
+            $title, $title2 = $title -split "`n"
+        }
         
         # if it was NOT defined by the profile, check the file itself
         If ($null -eq $isSelected) {
@@ -710,7 +712,7 @@ Function Load-Actions {
         $id = Resolve-Path $item.FullName -Relative
         
         # add item
-        $itemData = [PSCustomObject]@{Id=$id; Title=$title; Description=$data.description; Folder="actions"; FilePath=$dir.actions; FileName=$item.Name; IsSelected=[bool]$isSelected; DescriptionVisibility=$descriptionVisibility; TextBoxVisibility=$textBoxVisibility; Value=$data.value; TextBoxVisibility2=$textBoxVisibility2; Value2=$data.value2; Data=$data}
+        $itemData = [PSCustomObject]@{Id=$id; Title=$title; Title2=$title2; Description=$data.description; Folder="actions"; FilePath=$dir.actions; FileName=$item.Name; IsSelected=[bool]$isSelected; DescriptionVisibility=$descriptionVisibility; TextBoxVisibility=$textBoxVisibility; Value=$data.value; TextBoxVisibility2=$textBoxVisibility2; Value2=$data.value2; Data=$data}
         <# $pos = #> $Elements.lvActions.Items.Add($itemData) | Out-Null
     }
 }
