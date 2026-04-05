@@ -44,25 +44,38 @@ Run with example data
 ```
 *NOte: First value in a param is the default*
 
-`-Profile <name>` does pattern matching (using `-like`), so case does not matter and you could use `mainloc*`
+Params:
+- `-Profile <name>` does pattern matching (using `-like`), so case does not matter and you could use `mainloc*`
+- `-AutoStart <'none'|'actions'|'software'|'all'>` executes the specified category, like the buttons would
+- `-Config <path>` is relative to your current folder; Deploymentor looks in the install folder for `.\data\config.ps1` then `.\config.ps1` and loads it as base config, then loads the config from param on top. `"examples"` is a special value that loads the examples config from the install folder.
+- `-Logs <path>` target path for the automatically created log (it defaults to the Deplomentor folder)
+- `-Debug` also outputs XAMLgui info
 
-`-AutoStart <'none'|'actions'|'software'|'all'>` executes the specified category, like the buttons would
+**Note:** About the files in the root
+- `deploymentor.ps1` is the main script, can by run directly from within powershell (with `.\deploymentor <params>`).<br>
+  `deploymentor.cmd` is openning a new console window with powershell and will run the main script (params work as well) - Helpful if you want to double click in the explorer to run it.<br>
+  `deploymentor-example.ps1` is like `deploymentor.ps1` but runs with `-Config examples` to prefill with examples.<br>
+  `deploymentor-example.cmd` is like `deploymentor.cmd` but runs with `-Config examples` to prefill with examples.<br>
+  For publishing as Module: Deploymentor.psd1, Deploymentor.psm1, publish.ps1<br>
+  To run, the minimal required files are: `deploymentor.ps1`, `.\data\config.ps1` (base config), `.\data\MainWindow.xaml` (the GUI), empy folders for each `$dir` in config.ps1
 
-`-Config <path>` is relative to your current folder; Deploymentor looks in the install folder for `.\data\config.ps1` then `.\config.ps1` and loads it as base config, then loads the config from param on top. `"examples"` is a special value that loads the examples config from the install folder.
+**Note:** Additional Modules
+- Adding your own modules for actions/...:
 
-`-Logs <path>` target path for the automatically created log (it defaults to the Deplomentor folder)
+    -  Import another module from the main ps-modules folder.
+        ```ps1
+        Import-LocalModule SomeOtherImportantModule
+        ```
+        Using `Import-LocalModule`, the module will be downloaded into the main modules folder.
+        
+        You can change where to look for and save a module with something like `Import-LocalModule <ModuleName> -Path $PSScriptRoot\ps-modules`
 
-`-Debug` also outputs XAMLgui info
-
-`deploymentor.ps1` is the main script, can by run directly from within powershell (with `.\deploymentor <params>`).<br>
-`deploymentor.cmd` is openning a new console window with powershell and will run the main script (params work as well) - Helpful if you want to double click in the explorer to run it.<br>
-`deploymentor-example.ps1` is like `deploymentor.ps1` but runs with `-Config examples` to prefill with examples.<br>
-`deploymentor-example.cmd` is like `deploymentor.cmd` but runs with `-Config examples` to prefill with examples.<br>
-For publishing as Module: Deploymentor.psd1, Deploymentor.psm1, publish.ps1<br>
-To run, the minimal required files are: `deploymentor.ps1`, `.\data\config.ps1` (base config), `.\data\MainWindow.xaml` (the GUI), empy folders for each `$dir` in config.ps1
+    - Some Modules and functions are preloaded,<br> you have access to all of `XAMLGui`, `ConvertTo-NiceXml`, native `Expand-Archive` (un-zip), ...
+        
 
 
-**Note:** On every run, a new logfile will be created in the .\log folder. This can not be configured, but changed by param.
+**Note:** About logfiles
+- On every run, a new logfile will be created in the .\log folder. This can not be configured, but changed by param.
 
 ### Tricks
 - **After Profile 1 restart and continue with profile `MainLocation Second`**
@@ -175,12 +188,12 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
         installFn = {
             param($ctx, [string]$title, [string]$message)
             
-            # Import another module from the main ps_modules folder.
-            #Import-LocalModule SomeOtherImportantModule -Path ..\ps_modules
+            # Import another module from the main ps-modules folder.
+            #Import-LocalModule SomeOtherImportantModule -Path ..\ps-modules
             # using `Import-LocalModule`, the module will be downloaded into .\ps-modules if missing
 
             # Some Modules and functions are preloaded,
-            # you have access to all of XAMLGui, ConvertTo-NiceXml
+            # you have access to all of XAMLGui, ConvertTo-NiceXml, native Expand-Archive (un-zip), ...
 
             Write-Host "Messagebox: $title`n$message" # always log to console as well!
             Show-MessageBox $message $title
@@ -217,7 +230,7 @@ installFn = {
         software = "..\software"
         tools = "..\tools"
 
-        psmodules = "..\ps-modules" # will be created if missing, defaults to Deploymenter's installation dir .\ps-modules
+        #psmodules = "..\ps-modules" # will be created if missing, defaults to Deploymentor's installation dir .\ps-modules
     }
 
     # when showing the button caption, remove the extension from the displayed caption
@@ -261,6 +274,7 @@ installFn = {
         ".sh"  = "jsonfile"     # is a temp jsonfile as param 1 to script / linux has usually `jq`/`awk` nativly installed
     }
     ```
+    - **NOTE**: `psmodules` should only be set, if you want to redirect all ps-modules because you may not be able create the ps-modules in the deploymentor installation folder
     - Example for `nativefile` usage, to get the `$ctx` like in `native`
         ```powershell
         param($ctxFileName)
@@ -355,8 +369,8 @@ Any folder that should be listed in the software list. See `config.ps1` -> `$sof
             installFn = {
                 param( $ctx )
 
-                # Import another module from the main ps_modules folder.
-                #Import-LocalModule SomeOtherImportantModule -Path ..\ps_modules
+                # Import another module from the main ps-modules folder.
+                #Import-LocalModule SomeOtherImportantModule -Path ..\ps-modules
                 # using `Import-LocalModule`, the module will be downloaded into .\ps-modules if missing
 
                 # Some Modules and functions are preloaded,

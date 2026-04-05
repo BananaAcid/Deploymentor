@@ -50,12 +50,21 @@ Write-Host "Deploymentor $VERSION" -ForegroundColor Yellow
 Write-Host "Working dir: $PWD"
 
 
+# --- config loading -------------------------------
+
+
 # config requirements
 #  always load as base config
 $ConfigFileBase = (Get-Item "$PSScriptRoot\data\config.ps1","$PSScriptRoot\config.ps1" -ErrorAction SilentlyContinue | Select-Object -First 1)
 . $ConfigFileBase
+
+# set in case it is not set in the -ConfigFile parameter
+if (-not $dir) { $dir = @{} }
+$psmodulesDir = if (-not $dir["psmodules"]) { "$PSScriptRoot\ps-modules" } else { if ([System.IO.Path]::IsPathRooted($dir["psmodules"])) { $dir["psmodules"] } else { Join-Path (Split-Path $ConfigFileBase) $dir["psmodules"] } }
+
 # just "examples" is a special case
 if ($ConfigFile -eq "examples") { $ConfigFile = "$PSScriptRoot\examples\data\config.ps1" }
+
 # can be configured by the user (if its the same default one ... nothing happens)
 if ($ConfigFile) {
     $configFile = $(if ([System.IO.Path]::IsPathRooted($configFile)) { $configFile } else { Join-Path $callingFromPWD $configFile })
@@ -71,19 +80,26 @@ if ($ConfigFile) {
     }
 }
 else {
-    # make sure, it is always set
+    # make sure, it is always set - needed for $dir resolution
     $ConfigFile = $ConfigFileBase
 }
 
 Write-Host "Config File: $ConfigFile"
 
-# early config handling
+
+# --- early config handling -------------------------------
+
+
 If (!$showConsole) { Hide-Console }
 
 
 # --- Dirs based on config handling -------------------------------
 
 
+# ensure ps-modules dir exists
+$psmodulesDir = if (-not $dir["psmodules"]) { "$PSScriptRoot\ps-modules" } else { if ([System.IO.Path]::IsPathRooted($dir["psmodules"])) { $dir["psmodules"] } else { Join-Path (Split-Path $ConfigFile) $dir["psmodules"] } }
+if (!(Test-Path $psmodulesDir)) { mkdir $psmodulesDir | Out-Null }
+$dir["psmodules"] = $psmodulesDir # force update, in case there was a fallback because of a missing config
 # ensure cache dir exists
 $cacheDir = if ([System.IO.Path]::IsPathRooted($dir["cache"])) { $dir["cache"] } else { Join-Path (Split-Path $ConfigFile) $dir["cache"] }
 if (!(Test-Path $cacheDir)) { mkdir $cacheDir | Out-Null }
@@ -105,9 +121,6 @@ Function Find-LocalModulePath { param( [Parameter(Mandatory=$true, Position=0)] 
 Function Import-LocalModule { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = ".\ps-modules", [Boolean] $Download = $True ) if (-not (Find-LocalModulePath $Name -Path $Path) -and $Download) { Save-Module -Name $Name -Path $Path } $fullPath = Find-LocalModulePath $Name -Path $Path; if (-not $fullPath) { Write-Error "Unable to find $Name module, could not download. Aborting."; Exit 99 } Write-Host "Importing $Name module from $fullPath"; Import-Module (Join-Path $fullPath $Name); }
 Function Get-LocalModule { param( [Parameter(Mandatory=$true, Position=0)] [String] $Name, [String] $Path = ".\ps-modules", [Boolean] $Download = $True ) if (-not (Find-LocalModulePath $Name -Path $Path) -and $Download) { Save-Module -Name $Name -Path $Path } $fullPath = Find-LocalModulePath $Name -Path $Path; if (-not $fullPath) { Write-Error "Unable to find $Name module, could not download. Aborting."; Exit 99 } return $fullPath; }
 
-# ensure ps-modules dir exists
-if (!(Test-Path $dir.psmodules)) { mkdir $dir.psmodules | Out-Null }
-
 ## DO NOT USE THIS
 ## We use a local version of the XAMLgui module, because deploying the app on an USB stick
 ## will need it and might not have internet access
@@ -119,6 +132,7 @@ if (Test-Path -Path "$PSScriptRoot\..\XAMLgui\XAMLgui") { ls "$PSScriptRoot\..\X
 #! we do not import, because the handlers are not picked up -- TODO: FIX this.
 else { ls "$(Get-LocalModule XAMLgui -Path $dir.psmodules)\*.ps1" |% { . $_.FullName } }
 
+Write-Debug "XAMLgui Version $(Get-XAMLguiVersion)"
 
 # --- Context preperation -------------------------------
 
@@ -157,7 +171,8 @@ Function Load-ContextFns {
         Get-FnAsString Import-LocalModule   # requires Find-LocalModulePath
         # Get-FnAsString Get-LocalModule    # gets added by Import-LocalModule within context
         Get-FnAsString ConvertTo-NiceXml    # good to have
-        "Import-LocalModule XAMLgui -Path `"$(Join-Path $PSScriptRoot .\ps-modules -Resolve)`""  # requires Import-LocalModule to be available
+        "Import-LocalModule XAMLgui -Path `"$($dir.psmodules)`""  # requires Import-LocalModule to be available
+        "Set-LocalModulePathBase -Path `"$($dir.psmodules)`""     # provide the Deploymentor module path to search in for modules / or the one configured
         'Enable-VisualStyles'
         Get-FnAsString Write-ErrorClean     # we make sure, we have an error handler that is able to be cought by transcript
     ) -join "`n"

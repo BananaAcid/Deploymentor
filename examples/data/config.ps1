@@ -12,6 +12,4 @@ $dir = @{
     actions = "..\actions"
     software = "..\software"
     tools = "..\tools"
-
-    psmodules = "..\..\ps-modules" # will be created if missing, defaults to Deploymenter's installation dir .\ps-modules
 }

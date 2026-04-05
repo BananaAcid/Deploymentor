@@ -8,6 +8,7 @@
     Title="Deploymentor" Height="600" Width="1350" WindowStartupLocation="CenterScreen"
     Style="{DynamicResource WindowStyle}"
     Tag="{Binding ElementName=tglDarkMode, Path=IsChecked, Mode=OneWay, FallbackValue=False}"
+    x:Name="MainWindow"
     ContentRendered="Window_ContentRendered"
     >
 
@@ -653,7 +654,7 @@
 
                             <ListView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Launch" Click="lvSoftware_ContextMenu_Click" />
+                                    <MenuItem x:Name="lvSoftware_ContextMenu" Header="Launch" Click="lvSoftware_ContextMenu_Click" />
                                 </ContextMenu>
                             </ListView.ContextMenu>
 
