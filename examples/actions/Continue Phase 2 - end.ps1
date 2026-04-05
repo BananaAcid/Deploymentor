@@ -1,7 +1,4 @@
 @{
-    Title = ""
-    Description = "Continue Phase 2 - END"
-
     installFn = {
         param ( $ctx )
 

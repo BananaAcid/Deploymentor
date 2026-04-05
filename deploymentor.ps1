@@ -656,7 +656,7 @@ Function Load-Actions {
         $data = & $item.FullName
         
         $title = $item.BaseName
-        If ($data.title) {
+        If ($null -ne $data.title) {
             $title = $data.title
         }
         
