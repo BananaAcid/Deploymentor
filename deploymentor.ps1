@@ -19,8 +19,8 @@ param(
     $ProfileSelected = $null, # int or name string
     
     [Parameter(Mandatory=$false, Position=1)]
-    [ValidateSet('actions','software','all')]
-    [string]$AutoStart = '',
+    [ValidateSet('none','actions','software','all')]
+    [string]$AutoStart = 'none',
 
     [Parameter(Mandatory=$false, Position=2)]
     [string]$ConfigFile = "$PSScriptRoot\data\config.ps1",
@@ -152,7 +152,7 @@ Function Load-ContextFns {
 
 # handler - have to be available before loading form
 function Deploymentor.MainWindow.DoInstallSoftware_Click($Sender1, $EventArgs1) { 
-    if ( (Show-MessageBox "Are you sure you want to run all selected installations?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
+    if (($sender1 -ne 'AutoStart') -and (Show-MessageBox "Are you sure you want to run all selected installations?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
 
     Reset-lastExecResults
     Reset-Progressbars
@@ -163,7 +163,7 @@ function Deploymentor.MainWindow.DoInstallSoftware_Click($Sender1, $EventArgs1) 
 }
 
 function Deploymentor.MainWindow.DoInstallActions_Click($Sender1, $EventArgs1) { 
-    if ( (Show-MessageBox "Are you sure you want to run all selected actions?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
+    if (($sender1 -ne 'AutoStart') -and  (Show-MessageBox "Are you sure you want to run all selected actions?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
 
     Reset-lastExecResults
     Reset-Progressbars
@@ -212,7 +212,7 @@ function Deploymentor.MainWindow.doInstallAll_Click($Sender1, $EventArgs1) {
     $actionsCount = $Elements.lvSoftware.SelectedItems.Count + $Elements.lvActions.SelectedItems.Count
     $counter = 0
 
-    if ( (Show-MessageBox "Are you sure you want to run all selected actions and all selected installations?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
+    if (($sender1 -ne 'AutoStart') -and (Show-MessageBox "Are you sure you want to run all selected actions and all selected installations?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
     
     Reset-lastExecResults
     Reset-Progressbars
@@ -1051,16 +1051,21 @@ Function Invoke-Tool {
 Function Handle-AutoStart {
     $AutoStart = $AutoStart.ToLower()
 
+    if ($AutoStart -and ($AutoStart -ne 'none')) {
+        Write-Host "AutoStart: $AutoStart"
+    }
+
     switch ($AutoStart) {
         'actions' { 
-            Deploymentor.MainWindow.DoInstallActions_Click
+            Deploymentor.MainWindow.DoInstallActions_Click('AutoStart')
         }
         'software' {
-            Deploymentor.MainWindow.DoInstallSoftware_Click
+            Deploymentor.MainWindow.DoInstallSoftware_Click('AutoStart')
         }
         'all' {
-            Deploymentor.MainWindow.doInstallAll_Click
+            Deploymentor.MainWindow.doInstallAll_Click('AutoStart')
         }
+        'none' {}
         Default {}
     }
 }
