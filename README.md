@@ -22,7 +22,7 @@ Start-Deploymentor -Config examples  # config path is relative to to the current
     - download as zip and extract: [`https://github.com/BananaAcid/Deploymentor/archive/refs/heads/main.zip`](https://github.com/BananaAcid/Deploymentor/archive/refs/heads/main.zip)
     - get it from PSGallery: `Save-Module Deploymentor -Path .\`
 
-2. *optionally:* configure `.\data\config.ps1`
+2. *optionally:* configure `.\data\config.ps1` **(Usually, this does not to be edited)**
 
 2. run once to be ready for offline use (will place the MainWindow.xaml into data, save the required PowerShell modules, create missing folders, ...)
 
@@ -40,42 +40,18 @@ Run with example data
 ## Usage
 
 ```powershell
-.\deploymentor [-Profile <0|index|name>] [-AutoStart <'none'|'actions'|'software'|'all'>] [-Config <"<Deploymentor>\data\config.ps1"|"<Deploymentor>\config.ps1"|"examples"|path>] [-Logs <".\logs"|path>] [-Debug]
+.\deploymentor [-Profile <0|index|name>] [-AutoStart <'none'|'actions'|'software'|'all'>] [-Config <"<Deploymentor>\data\config.ps1|<Deploymentor>\config.ps1"|"examples"|path>] [-Logs <".\logs"|path>] [-Debug]
 ```
-*NOte: First value in a param is the default*
+⚠️ **Note: First value in a param, is the default**
 
 Params:
-- `-Profile <name>` does pattern matching (using `-like`), so case does not matter and you could use `mainloc*`
-- `-AutoStart <'none'|'actions'|'software'|'all'>` executes the specified category, like the buttons would
-- `-Config <path>` is relative to your current folder; Deploymentor looks in the install folder for `.\data\config.ps1` then `.\config.ps1` and loads it as base config, then loads the config from param on top. `"examples"` is a special value that loads the examples config from the install folder.
-- `-Logs <path>` target path for the automatically created log (it defaults to the Deplomentor folder)
-- `-Debug` also outputs XAMLgui info
-
-**Note:** About the files in the root
-- `deploymentor.ps1` is the main script, can by run directly from within powershell (with `.\deploymentor <params>`).<br>
-  `deploymentor.cmd` is openning a new console window with powershell and will run the main script (params work as well) - Helpful if you want to double click in the explorer to run it.<br>
-  `deploymentor-example.ps1` is like `deploymentor.ps1` but runs with `-Config examples` to prefill with examples.<br>
-  `deploymentor-example.cmd` is like `deploymentor.cmd` but runs with `-Config examples` to prefill with examples.<br>
-  For publishing as Module: Deploymentor.psd1, Deploymentor.psm1, publish.ps1<br>
-  To run, the minimal required files are: `deploymentor.ps1`, `.\data\config.ps1` (base config), `.\data\MainWindow.xaml` (the GUI), empy folders for each `$dir` in config.ps1
-
-**Note:** Additional Modules
-- Adding your own modules for actions/...:
-
-    -  Import another module from the main ps-modules folder.
-        ```ps1
-        Import-LocalModule SomeOtherImportantModule
-        ```
-        Using `Import-LocalModule`, the module will be downloaded into the main modules folder.
-        
-        You can change where to look for and save a module with something like `Import-LocalModule <ModuleName> -Path $PSScriptRoot\ps-modules`
-
-    - Some Modules and functions are preloaded,<br> you have access to all of `XAMLGui`, `ConvertTo-NiceXml`, native `Expand-Archive` (un-zip), ...
-        
-
-
-**Note:** About logfiles
-- On every run, a new logfile will be created in the .\log folder. This can not be configured, but changed by param.
+| Param | Default | Description |
+| --- | --- | --- |
+| `-Profile <0\|index\|name>` | `0` | Does pattern matching (using `-like`), so case does not matter and you could use `mainloc*`. Using `-Profile examples` will prefill the GUI with some examples. |
+| `-AutoStart <'none'\|'actions'\|'software'\|'all'>` | `'none'` | Executes the specified category, like the buttons would |
+| `-Config <"<Deploymentor>\data\config.ps1\|<Deploymentor>\config.ps1"\|"examples"\|path>`> | `"<Deploymentor>\data\config.ps1"`, `"<Deploymentor>\config.ps1"` | Is relative to your current folder; Deploymentor looks in the install folder for `.\data\config.ps1` then `.\config.ps1` and loads it as base config, then loads the config from param on top. |
+| `-Logs <".\logs"\|path>` | `".\logs"` | Target path for the automatically created log (defaults to the Deplomentor folder). |
+| `-Debug` | | Shows some debugging info, also outputs XAMLgui info. |
 
 ### Tricks
 - **After Profile 1 restart and continue with profile `MainLocation Second`**
@@ -83,6 +59,9 @@ Params:
     `.\actions\Continue Phase 2.ps1`:
         ```powershell
         @{
+            Title = "User`nPassowrd"  # User will be next to Value and because of the newline, Password next to Value2
+            Description = "Continue Phase 2"
+
             hasValue = $true
             Value = $env:USERNAME
             
@@ -94,7 +73,7 @@ Params:
 
                 Run-Once "-executionpolicy bypass -file $PSScriptRoot\Deploymentor.ps1" -Params "-Config '$PSScriptRoot\data\config.ps1' -Profile *Second -AutoStart all"
 
-                # Set registry keys for AutoAdminLogon -- VALUES MUST BE REMOVED AFTER RESTART
+                # Set registry keys for AutoAdminLogon -- VALUES MUST BE REMOVED AFTER RESTART -> Another action for cleanup
                 $path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
                 Set-ItemProperty -Path $path -Name "AutoAdminLogon" -Value "1"
                 Set-ItemProperty -Path $path -Name "DefaultUserName" -Value $username
@@ -106,7 +85,7 @@ Params:
             }
         }
         ```
-    - it us 
+    
 - **Fresh deployment package**
     - create a new `start.ps1` with the following
     - Get updated version
@@ -127,18 +106,29 @@ Params:
         ```
 
 
-## Structure
+# Structure
 
 > [!NOTE]
 > Files starting with `.` or `_.` will be ignored and NOT shown in the software, actions and tools lists.
 
 **None of the examples in this repository include the actual exe/msi/zip, because of possible legal reasons. But the download paths should be in the deploy/install files as comment.**
 
-### \logs
+## ROOT: \
+- `\deploymentor.cmd`
+    - This is openning a new console window with powershell and will run the main script (params work as well) - Helpful if you want to double click in the explorer to run it.
+- `\deploymentor.ps1`
+    - This is the main script, can by run directly from within powershell (with `.\deploymentor <params>`).
+    - To run, the minimal required files are: `deploymentor.ps1`, `.\data\config.ps1` (base config), `.\data\MainWindow.xaml` (the GUI), empy folders for each `$dir` in config.ps1
+    - params: see section `start` above
 
-- `yyyy-MM-dd_HH-mm-ss.log`
+- `\deploymentor-example.ps1` is like `deploymentor.ps1` but runs with `-Config examples` to prefill with examples.<br>
+  `\deploymentor-example.cmd` is like `deploymentor.cmd` but runs with `-Config examples` to prefill with examples.
+  
+- `\Deploymentor.psd1, Deploymentor.psm1, publish.ps1`
+    - For publishing as a PSGallery Module
 
-### \actions
+## \actions
+
 Single actions for configuring the system (**NOT** software installs), with: 0, 1 or 2 text input fields<br>
 Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
 
@@ -202,6 +192,7 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
     ```
 
 #### Instead of hasValue and Value, the installFn params can be used, with defaults as string
+
 ```ps1
 installFn = {
     param($ctx, [string]$title = "The Title", [string]$message = "Default message")
@@ -211,77 +202,74 @@ installFn = {
 }
 ```
 
-### \data
-- `\cache\*.bmp` (cached application icons)
-- `\config.ps1`
-    ```ps1
-    # ALL variables are REQUIRED in the main config, if -Config param is used,
-    #  the provided config may only contain what is supposed to be overwriten
 
-    $darkMode = $true
+## \software
 
-    # paths are relative to this config, these paths are absolutely required to exist
-    $dir = @{
-        data = "..\data"
-        cache = "..\data\cache"  # will be created if missing, could be $env:TEMP but a local path is better for portable use
+Any folder that should be listed in the software list. See `config.ps1` -> `$softwareInstallers` to see what files will be looked for to determine if there is an installer or deploy script to run and `$contextFormat` how the 1st params gets context formatted. The scripts can either contain code or just install the exe with silent params.
 
-        profiles = "..\profiles"
-        actions = "..\actions"
-        software = "..\software"
-        tools = "..\tools"
+- `\...application name...`
+    
+    - ... any $softwareInstallers file type
 
-        #psmodules = "..\ps-modules" # will be created if missing, defaults to Deploymentor's installation dir .\ps-modules
-    }
+    - **using `deploy.ps1`:**
+        - `\Reader_en_install.exe` (for the deploy.ps1 script)
+        - `\deploy.ps1`
+            ```ps1
+            return @{
 
-    # when showing the button caption, remove the extension from the displayed caption
-    $toolsExtHide = @(".lnk", ".exe")
+                title="Acrobat Reader" #optional: if not given, the folder's name is used
 
-    $showConsole = $true
+                description = "Version 2025.001.21223" #optional: detault is empty
 
-    $softwareInstallers = @{
-        "install.ps1" = "dpx"  # is parsed for additional info, special Deploymentor file
+                icon = ".\Reader_en_install.exe" #optional: default is default-app.png
 
-        "deploy.ps1" = "ps"
+                isSelected = $TRUE  #optional: default is false, only used if a profile does not specify this
 
-        "deploy.vbs" = "wsh"
-        "install.vbs" = "wsh"  # alias for deploy.vbs
-        
-        "deploy.wsf" = "wsh"    # Windows script file (XML based)
-        "install.wsf" = "wsh"
-        
-        "deploy.js" = "wsh"
-        "install.js" = "wsh"
-        
-        "deploy.cmd" = "exec"
-        #"deploy.bat" = "exec" # ... don't ever use batch files -> use .cmd
-        
-        "setup.exe" = "exec"
-        "deploy.msi" = "exec"
-        "deploy.sh" = "bash"
-    }
+                ctxType = 'native' #optional: default is 'native', but could be changed to anything in config.ps1 > $contextFormat
 
-    $contextFormat = @{
-        "deploy.ps1" = "native" # special case - software installer runs in same session
-        ".ps1" = "nativefile"   # is a temp xmlfile with types to be able to convert it back (using Import-CliXml) - relevant for tools - they run in a separate session as admin (UAC might popup)
-        ".x.ps1" = "native"     # tool in same session -- works like an action or software (should be avoided)
-        ".vbs" = "xml"          # xml str as param 1 to script (probably buggy)
-        ".wsf" = "xml"          # xml str as param 1 to script (probably buggy)
-        ".js"  = "json"         # json str as param 1 (probably buggy)
-        ".bat" = ""             # defaults to key:val list in temp-file
-        ".cmd" = ""             # defaults to key:val list in temp-file
-        ".exe" = "jsonfile"     # is a temp jsonfile as param 1 to executable
-        ".msi" = "xmlfile"      # is a temp xmlfile as param 1 to executable
-        ".sh"  = "jsonfile"     # is a temp jsonfile as param 1 to script / linux has usually `jq`/`awk` nativly installed
-    }
-    ```
-    - **NOTE**: `psmodules` should only be set, if you want to redirect all ps-modules because you may not be able create the ps-modules in the deploymentor installation folder
-    - Example for `nativefile` usage, to get the `$ctx` like in `native`
-        ```powershell
-        param($ctxFileName)
-        $ctx = Import-CliXml -Path $ctxFileName
-        ```
+                # required, param() is optional
+                installFn = {
+                    param( $ctx )
 
-### \profiles
+                    # Import another module from the main ps-modules folder.
+                    #Import-LocalModule SomeOtherImportantModule -Path ..\ps-modules
+                    # using `Import-LocalModule`, the module will be downloaded into .\ps-modules if missing
+
+                    # Some Modules and functions are preloaded,
+                    # you have access to all of XAMLGui, ConvertTo-NiceXml, native Expand-Archive (un-zip), ...
+
+
+                    if (-not (Test-Path  .\Reader_en_install.exe)) {
+                        # open download page
+                        start "https://get.adobe.com/de/reader/download?....."
+                        # open current folder in explorer
+                        start ".\"
+                        # wait for user
+                        Show-MessageBox "Press ok after download to the correct folder: `nThe installer will be run with silent options afterwards." -Title "Acrobat Reader Setup missing"
+                    }
+
+                    Start-Process ".\Reader_en_install.exe /sPB /rs /msi" -Wait
+                }
+            }
+            ```
+
+
+## \tools
+
+**Any file** in this folder will be shown as button in the Tools section and clicking the button will launch it using `Start-Proccess`.
+
+The tool gets the context passed as first param, see `config.ps1` -> `$contextFormat` how context is formatted (`.ps1` = `nativefile` -> use `Import-CliXml`).
+
+⚠️ Windows must know about the file extension to be able to launch it - anything that can be double clicked will work.
+
+#### Difference: .ps1 and .x.ps1
+
+- `.ps1` will be launched in an isolated terminal as an admin (UAC might popup), and gets an immutable copy of the context - preferred
+- `.x.ps1` will be launcehd in the same session - like an action or software script - not preferred - might have elevation problems, due to not being an admin 
+
+
+## \profiles
+
 any PS1 here will define a list of software and actions to be shown in the lists
 
 - `\MainLocation.ps1`
@@ -333,6 +321,7 @@ any PS1 here will define a list of software and actions to be shown in the lists
     ```
 
 #### Note:
+
 - `tools = $null` **shows all**, if the key is `missing` it **shows all**. To **not show** any items use `@()`
     - same for `software` and `actions`
 
@@ -341,82 +330,120 @@ any PS1 here will define a list of software and actions to be shown in the lists
 - Multiple occurences of the same action / software / tool is possible (like retrying VCRedist multiple times, until defender leaves it alone).
 
 
-### \ps-modules
-Any downloaded PowerShell module goes into this folder. Use `Import-LocalModule` to use them (and to download them on first use).
-Manually install them there: `Save-Module -Name SomeModuleName -Path .\ps-modules`
+## \data
 
-### \software
-Any folder that should be listed in the software list. See `config.ps1` -> `$softwareInstallers` to see what files will be looked for to determine if there is an installer or deploy script to run and `$contextFormat` how the 1st params gets context formatted. The scripts can either contain code or just install the exe with silent params.
+- `\cache\*.bmp` (cached application icons)
 
-- `\...application name...`
-    - `\some_application.exe` (optional)
-    - `\install.vbs` (optional)
-    - `\deploy.ps1`
-        ```ps1
-        return @{
+- `\MainWindow.xaml` - The GUI
 
-            title="Acrobat Reader" #optional: if not given, the folder's name is used
+- `\config.ps1`
+    **Usually, this does not to be edited**
+    ```ps1
+    # ALL variables are REQUIRED in the main config, if -Config param is used,
+    #  the provided config may only contain what is supposed to be overwriten
 
-            description = "Version 2025.001.21223" #optional: detault is empty
+    $darkMode = $true
 
-            icon = ".\Reader_en_install.exe" #optional: default is default-app.png
+    # paths are relative to this config, these paths are absolutely required to exist
+    $dir = @{
+        "data" = "..\data"
+        "cache" = "..\data\cache"  # will be created if missing, could be $env:TEMP but a local path is better for portable use
 
-            isSelected = $TRUE  #optional: default is false, only used if a profile does not specify this
+        "profiles" = "..\profiles"
+        "actions" = "..\actions"
+        "software" = "..\software"
+        "tools" = "..\tools"
 
-            ctxType = 'native' #optional: default is 'native', but could be changed to anything in config.ps1 > $contextFormat
+        #"psmodules" = "..\ps-modules" # will be created if missing, defaults to Deploymentor's installation dir .\ps-modules
+    }
 
-            # required, param() is optional
-            installFn = {
-                param( $ctx )
+    # when showing the button caption, remove the extension from the displayed caption
+    $toolsExtHide = @(".lnk", ".exe")
 
-                # Import another module from the main ps-modules folder.
-                #Import-LocalModule SomeOtherImportantModule -Path ..\ps-modules
-                # using `Import-LocalModule`, the module will be downloaded into .\ps-modules if missing
+    $showConsole = $true
 
-                # Some Modules and functions are preloaded,
-                # you have access to all of XAMLGui, ConvertTo-NiceXml, native Expand-Archive (un-zip), ...
+    $softwareInstallers = @{
+        "install.ps1" = "dpx"  # is parsed for additional info, special Deploymentor file
 
+        "deploy.ps1" = "ps"
 
-                if (-not (Test-Path  .\Reader_en_install.exe)) {
-                    # open download page
-                    start "https://get.adobe.com/de/reader/download?....."
-                    # open current folder in explorer
-                    start ".\"
-                    # wait for user
-                    Show-MessageBox "Press ok after download to the correct folder: `nThe installer will be run with silent options afterwards." -Title "Acrobat Reader Setup missing"
-                }
+        "deploy.vbs" = "wsh"
+        "install.vbs" = "wsh"  # alias for deploy.vbs
+        
+        "deploy.wsf" = "wsh"    # Windows script file (XML based)
+        "install.wsf" = "wsh"
+        
+        "deploy.js" = "wsh"
+        "install.js" = "wsh"
+        
+        "deploy.cmd" = "exec"
+        #"deploy.bat" = "exec" # ... don't ever use batch files -> use .cmd
+        
+        "setup.exe" = "exec"
+        "deploy.msi" = "exec"
+        "deploy.sh" = "bash"
+    }
 
-                Start-Process ".\Reader_en_install.exe /sPB /rs /msi" -Wait
-            }
-        }
+    $contextFormat = @{
+        "deploy.ps1" = "native" # special case - software installer runs in same session
+        ".ps1" = "nativefile"   # is a temp xmlfile with types to be able to convert it back (using Import-CliXml) - relevant for tools - they run in a separate session as admin (UAC might popup)
+        ".x.ps1" = "native"     # tool in same session -- works like an action or software (should be avoided)
+        ".vbs" = "xml"          # xml str as param 1 to script (probably buggy)
+        ".wsf" = "xml"          # xml str as param 1 to script (probably buggy)
+        ".js"  = "json"         # json str as param 1 (probably buggy)
+        ".bat" = ""             # defaults to key:val list in temp-file
+        ".cmd" = ""             # defaults to key:val list in temp-file
+        ".exe" = "jsonfile"     # is a temp jsonfile as param 1 to executable
+        ".msi" = "xmlfile"      # is a temp xmlfile as param 1 to executable
+        ".sh"  = "jsonfile"     # is a temp jsonfile as param 1 to script / linux has usually `jq`/`awk` nativly installed
+    }
+    ```
+    - **NOTE**: `psmodules` should only be set, if you want to redirect all ps-modules because you may not be able create the ps-modules in the deploymentor installation folder
+    - Example for `nativefile` usage, to get the `$ctx` like in `native`
+        ```powershell
+        param($ctxFileName)
+        $ctx = Import-CliXml -Path $ctxFileName
         ```
 
-### \tools
-**Any file** in this folder will be shown as button in the Tools section and clicking the button will launch it using `Start-Proccess`.
 
-The tool gets the context passed as first param, see `config.ps1` -> `$contextFormat` how context is formatted (`.ps1` = `nativefile` -> use `Import-CliXml`).
+## \ps-modules
 
-⚠️ Windows must know about the file extension to be able to launch it - anything that can be double clicked will work.
+Any downloaded PowerShell module goes into this folder. Use `Import-LocalModule` to use them (and to download them on first use).
 
-#### Difference: .ps1 and .x.ps1
-- `.ps1` will be launched in an isolated terminal as an admin (UAC might popup), and gets an immutable copy of the context - preferred
-- `.x.ps1` will be launcehd in the same session - like an action or software script - not preferred - might have elevation problems, due to not being an admin 
+Manually install other modules to this folder, to use them within any action/software/tool, in your Deploymentor folder:
+```powershell
+Save-Module -Name SomeModuleName -Path .\ps-modules
+```
 
-### \window
+In the action/software/tool, to use the module from the Deploymentor installation folder:
+```ps1
+Import-LocalModule SomeModuleName
+```
+
+Using `Import-LocalModule`, the module will be downloaded into the main modules folder.
+        
+You can change where to look for and save a module with something like `Import-LocalModule SomeModuleName -Path $PSScriptRoot\ps-modules`
+
+> [!TIP]
+> Some Modules and functions are preloaded: <br>
+> you have access to all of `XAMLGui`, `ConvertTo-NiceXml`, native `Expand-Archive` (un-zip), ...
+
+
+## \window
+
 The Visual Studio project solution. This houses the MainWindow.xaml and all required files, to edit it visually in Visual Studio.
 
 - `\MainWindow.xaml`
-- `\...` other VS files
+- `\...` other VS files to be able to edit the XAML in Visual Studio's graphical editor
 
-### ROOT: \
-- `\deploymentor.cmd`
-    - this runs `powershell.exe` with `.\deploymentor.ps1`
-- `\deploymentor.ps1`
-    - This is the app code - can be run directly if in powershell
-    - requires `.\data\config.ps1`
-    - params: see section `start` above
 
-### `$ctx`
+## \logs
+
+On every run, a new logfile will be created in the .\log folder. This can not be configured, but changed by param.
+
+- `yyyy-MM-dd_HH-mm-ss.log`
+
+# `$ctx` - Context passed into actions/softwares/tools
 
 ```ps1
 $ctx = @{
@@ -462,7 +489,9 @@ Your tool `.ps1`/`.x.ps1` or software `deploy.ps1` would need a `param( $ctx )` 
 > - wsh scripts support XML way better, except for a .js wsh script - it will prefer JSON,
 > - a powershell script in a new session can restore the ctx by converting it from XML with datatypes
 
-## Attribution
+---
+
+# Attribution
 
 - default-app.png
     - https://icons8.com/ - https://icons8.com/icons/set/software--style-ultraviolet (Free PNG)
