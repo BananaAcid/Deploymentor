@@ -845,18 +845,39 @@
                                 <DataTemplate>
                                     <Border Height="100" Width="100" Padding="5" Background="#E50078D7">
                                         <Grid>
-                                            <Image Source="{Binding Icon, FallbackValue=/default-app.png}" Height="40" Margin="0,-15,0,5" />
-                                            <TextBlock TextWrapping="Wrap" Text="{Binding Title, FallbackValue=Tool}" VerticalAlignment="Bottom"/>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <!--  Margin="0,-15,0,5" -->
+                                            <Image Grid.Row="0" Source="{Binding Icon, FallbackValue=/default-app.png}" Height="40" />
+                                            <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="{Binding Title, FallbackValue=Tool}" VerticalAlignment="Bottom" MaxHeight="48" />
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
 
                             <ListBoxItem>
-                                <Border Height="100" Width="100" Padding="5" Background="#E50078D7">
+                                <Border Height="110" Width="110" Padding="5" Background="#E50078D7">
                                     <Grid>
-                                        <Image Source="/default-app.png" Height="40" Margin="0,-15,0,5" />
-                                        <TextBlock TextWrapping="Wrap" Text="Some Tool" VerticalAlignment="Bottom" />
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <Image Grid.Row="0" Source="/default-app.png" Height="40"  />
+                                        <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="Some Tool - and too much extra textj" VerticalAlignment="Bottom" MaxHeight="48" />
+                                    </Grid>
+                                </Border>
+                            </ListBoxItem>
+                            <ListBoxItem>
+                                <Border Height="110" Width="110" Padding="5" Background="#E50078D7">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <Image Grid.Row="0" Source="/default-app.png" Height="40" />
+                                        <TextBlock Grid.Row="1" TextWrapping="Wrap" Text="Some Tool" VerticalAlignment="Bottom" MaxHeight="48" />
                                     </Grid>
                                 </Border>
                             </ListBoxItem>
