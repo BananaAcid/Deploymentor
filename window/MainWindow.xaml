@@ -711,7 +711,7 @@
                         </Grid.RowDefinitions>
 
                         <Label Grid.Row="0" FontSize="26" Content="Actions"/>
-                        <ListView Grid.Row="1" SelectionMode="Multiple" x:Name="lvActions" BorderBrush="Transparent" VerticalAlignment="Stretch" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLengthUnit="Item" VirtualizingPanel.VirtualizationMode="Recycling" UseLayoutRounding="True" ItemContainerStyle="{StaticResource ListItemChackmarkStyle2}">
+                        <ListView Grid.Row="1" SelectionMode="Multiple" x:Name="lvActions" BorderBrush="Transparent" VerticalAlignment="Stretch" VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLengthUnit="Item" VirtualizingPanel.VirtualizationMode="Recycling" UseLayoutRounding="True" ItemContainerStyle="{StaticResource ListItemChackmarkStyle2}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="5,5,25,5">
@@ -749,8 +749,8 @@
 
                                         <TextBlock Grid.Column="0" Grid.Row="0" Text="Some Title&#x0a;row2" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
                                         <TextBlock Grid.Column="0" Grid.Row="1" Text="row2" LineHeight="auto" FontWeight="Bold" VerticalAlignment="Center" Visibility="Visible" />
-                                        
-                                        <TextBox Grid.Column="1" Grid.Row="0" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="Visible" Text="abcd" />
+
+                                        <TextBox Grid.Column="1" Grid.Row="0" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="Visible" Text="abcdasdf asdfasd fasdfasd fasdfasd fasdfasdfasdfasdf asdfasdf asdf asdf asdf"/>
                                         <TextBox Grid.Column="1" Grid.Row="1" Margin="20,0,0,2" IsEnabled="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}" Visibility="Visible" Text="efgh" />
                                     </Grid>
                                     <TextBlock Text="Some description .. use `n in PS as newline" TextWrapping="Wrap" FontSize="11" Visibility="Visible" Margin="0,5,0,0" />
