@@ -15,7 +15,7 @@ Start-Deploymentor  # -Config  and other params, see 'Usage' below
 Start-Deploymentor -Config examples  # config path is relative to to the current folder
 ```
 
-## Installation as portable version
+## Installation as portable version / offline use
 
 1. get the folder, do either:
     - clone this repository: `git clone https://github.com/BananaAcid/Deploymentor.git`
@@ -24,7 +24,7 @@ Start-Deploymentor -Config examples  # config path is relative to to the current
 
 2. *optionally:* configure `.\data\config.ps1`
 
-2. run once (will place the MainWindow.xaml into data, save the required PowerShell modules, create missing folders, ...)
+2. run once to be ready for offline use (will place the MainWindow.xaml into data, save the required PowerShell modules, create missing folders, ...)
 
 ## Start
 
@@ -34,38 +34,90 @@ Start-Deploymentor -Config examples  # config path is relative to to the current
 
 Run with example data
 ```powershell
-.\deploymentor -Config .\examples\data\config.ps1 
+.\deploymentor -Config examples
 ```
 
 ## Usage
 
 ```powershell
-.\deploymentor [-Profile <0|index|name>] [-Config <".\data\config.ps1"|".\config.ps1"|"examples"|path>] [-Logs <".\logs"|path>] [-Debug]
+.\deploymentor [-Profile <0|index|name>] [-AutoStart <'none'|'actions'|'software'|'all'>] [-Config <"<Deploymentor>\data\config.ps1"|"<Deploymentor>\config.ps1"|"examples"|path>] [-Logs <".\logs"|path>] [-Debug]
 ```
+*NOte: First value in a param is the default*
 
 `-Profile <name>` does pattern matching (using `-like`), so case does not matter and you could use `mainloc*`
 
-`-Config <path>` is relative to your current folder; Deploymenter looks for ".\data\config.ps1" then ".\config.ps1" and loads it as base config, then loads the config from param on top. `"examples"` is a special value that loads the examples config.
+`-AutoStart <'none'|'actions'|'software'|'all'>` executes the specified category, like the buttons would
 
-`-Logs <path>` is getting a log for each start
+`-Config <path>` is relative to your current folder; Deploymentor looks in the install folder for `.\data\config.ps1` then `.\config.ps1` and loads it as base config, then loads the config from param on top. `"examples"` is a special value that loads the examples config from the install folder.
 
-`-Debug` outputs XAMLgui info
+`-Logs <path>` target path for the automatically created log (it defaults to the Deplomentor folder)
+
+`-Debug` also outputs XAMLgui info
 
 `deploymentor.ps1` is the main script, can by run directly from within powershell (with `.\deploymentor <params>`).<br>
 `deploymentor.cmd` is openning a new console window with powershell and will run the main script (params work as well) - Helpful if you want to double click in the explorer to run it.<br>
-`deploymentor-example.ps1` is like `deploymentor.ps1` but runs with `-Config .\examples\data\config.ps1` to prefill with examples.<br>
-`deploymentor-example.cmd` is like `deploymentor.cmd` but runs with `-Config .\examples\data\config.ps1` to prefill with examples.<br>
-For publishing: deploymentor.psd1, deploymentor.psm1, publish.ps1 - not needed to work
+`deploymentor-example.ps1` is like `deploymentor.ps1` but runs with `-Config examples` to prefill with examples.<br>
+`deploymentor-example.cmd` is like `deploymentor.cmd` but runs with `-Config examples` to prefill with examples.<br>
+For publishing as Module: Deploymentor.psd1, Deploymentor.psm1, publish.ps1<br>
+To run, the minimal required files are: `deploymentor.ps1`, `.\data\config.ps1` (base config), `.\data\MainWindow.xaml` (the GUI), empy folders for each `$dir` in config.ps1
 
 
 **Note:** On every run, a new logfile will be created in the .\log folder. This can not be configured, but changed by param.
 
-*Info: If you have an action that adds Deploymentor to run-once/registry with `-Profile 2` then does a reboot (should check context for previous actions errors), the Gui would open with the next porifle selected on restart*
+### Tricks
+- **After Profile 1 restart and continue with profile `MainLocation Second`**
+    - If you have an `action` that adds Deploymentor to run-once/registry (`Set-RunOnce` is imported with XAMLgui) and then does a reboot (should check context for previous actions errors), the GUI would open with the next proifle selected on restart and run automatically<br>
+    `.\actions\Continue Phase 2.ps1`:
+        ```powershell
+        @{
+            hasValue = $true
+            Value = $env:USERNAME
+            
+            hasValue2 = $true
+            Value2 = $password
+
+            installFn = {
+                param ( $ctx, <#Value#>[string]$username, <#Value2#>[string]$password )
+
+                Run-Once "-executionpolicy bypass -file $PSScriptRoot\Deploymentor.ps1" -Params "-Config '$PSScriptRoot\data\config.ps1' -Profile *Second -AutoStart all"
+
+                # Set registry keys for AutoAdminLogon -- VALUES MUST BE REMOVED AFTER RESTART
+                $path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
+                Set-ItemProperty -Path $path -Name "AutoAdminLogon" -Value "1"
+                Set-ItemProperty -Path $path -Name "DefaultUserName" -Value $username
+                Set-ItemProperty -Path $path -Name "DefaultPassword" -Value $password
+                Set-ItemProperty -Path $path -Name "DefaultDomainName" -Value "$env:USERDOMAIN" # To force local acount: "."
+
+                shutdown /r /t 10 /f /e "Rollout - Phase 2"
+                Exit 0
+            }
+        }
+        ```
+    - it us 
+- **Fresh deployment package**
+    - create a new `start.ps1` with the following
+    - Get updated version
+        - You can download a zip from a network server:
+            ```powershell
+            Invoke-WebRequest "https//server.local/deployments/Deploymentor-MainLocation.zip" -OutFile .\
+            ```
+        - You could copy a zip from a network location:
+            ```powershell
+            Copy-Item -r \\sever\deployments\Deploymentor-MainLocation.zip .\
+            ```
+    - Handle updated files and start
+        ```powershell
+        #Extract the new content to current folder: 
+        Expand-Archive .\Deploymentor-MainLocation.zip -Force;
+        Remove-Item .\Deploymentor-MainLocation.zip
+        Start-Deploymentor -Config .\Deploymentor-MainLocation\data\config.ps1
+        ```
+
 
 ## Structure
 
 > [!NOTE]
-> Files starting with `.` or `_.` will be ignored and shown.
+> Files starting with `.` or `_.` will be ignored and NOT shown in the software, actions and tools lists.
 
 **None of the examples in this repository include the actual exe/msi/zip, because of possible legal reasons. But the download paths should be in the deploy/install files as comment.**
 
@@ -155,12 +207,12 @@ installFn = {
 
     $darkMode = $true
 
-    # paths to required folders
+    # paths are relative to this config, these paths are absolutely required to exist
     $dir = @{
         data = "..\data"
-        cache = "..\data\cache"
-        profiles = "..\profiles"
+        cache = "..\data\cache"  # will be created if missing, could be $env:TEMP but a local path is better for portable use
 
+        profiles = "..\profiles"
         actions = "..\actions"
         software = "..\software"
         tools = "..\tools"
@@ -196,7 +248,7 @@ installFn = {
     $contextFormat = @{
         "deploy.ps1" = "native" # special case - software installer runs in same session
         ".ps1" = "nativefile"   # is a temp xmlfile with types to be able to convert it back (using Import-CliXml) - relevant for tools - they run in a separate session
-        ".x.ps1" = "native"     # tool in same session -- like an action or software
+        ".x.ps1" = "native"     # tool in same session -- works like an action or software (should be avoided)
         ".vbs" = "xml"          # xml str as param 1 to script (probably buggy)
         ".wsf" = "xml"          # xml str as param 1 to script (probably buggy)
         ".js"  = "json"         # json str as param 1 (probably buggy)
@@ -207,6 +259,11 @@ installFn = {
         ".sh"  = "jsonfile"     # is a temp jsonfile as param 1 to script / linux has usually `jq`/`awk` nativly installed
     }
     ```
+    - Example for `nativefile` usage, to get the `$ctx` like in `native`
+        ```powershell
+        param($ctxFileName)
+        $ctx = Import-CliXml -Path $ctxFileName
+        ```
 
 ### \profiles
 any PS1 here will define a list of software and actions to be shown in the lists
