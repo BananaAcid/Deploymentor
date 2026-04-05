@@ -143,6 +143,7 @@ $ctxBase =  @{
 }
 $script:ctx = New-ClonedObject $ctxBase
 $script:contextFNs = "" # set in Load-ContextFns, will pass helper functions to actions/apps
+$script:contextFNsFile = ""
 
 #globals
 $script:profilesAvailable = @()
@@ -160,21 +161,29 @@ Function Load-ContextFns {
         'Enable-VisualStyles'
         Get-FnAsString Write-ErrorClean     # we make sure, we have an error handler that is able to be cought by transcript
     ) -join "`n"
+
+    $script:contextFNsFile = Join-Path $dir.cache 'contextFNs.ps1'
+    $script:contextFNs | Out-File $script:contextFNsFile -Force
 }
 
-
-#! DEBUG ---------------------------------------------------- =========================
-# Load-ContextFns
-# $script:contextFNs
-# exit
-
-
 # --- UI Event-Handlers -------------------------------
-
-
 # handler - have to be available before loading form
+
+function Deploymentor.MainWindow.DoInstallActions_Click($Sender1, $EventArgs1) {
+    $tasksActions = ($Elements.lvActions.items |? IsSelected -eq $true).Count
+    if (($sender1 -ne 'AutoStart') -and  (Show-MessageBox "Are you sure you want to run all selected actions ($tasksActions)?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
+
+    Reset-lastExecResults
+    Reset-Progressbars
+    
+    Enable-Ui -Enable $false
+    Invoke-Actions
+    Enable-Ui -Enable $true
+}
+
 function Deploymentor.MainWindow.DoInstallSoftware_Click($Sender1, $EventArgs1) { 
-    if (($sender1 -ne 'AutoStart') -and (Show-MessageBox "Are you sure you want to run all selected installations?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
+    $tasksSoftware = ($Elements.lvSoftware.items |? IsSelected -eq $true).Count
+    if (($sender1 -ne 'AutoStart') -and (Show-MessageBox "Are you sure you want to run all selected software ($tasksSoftware)?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
 
     Reset-lastExecResults
     Reset-Progressbars
@@ -184,15 +193,33 @@ function Deploymentor.MainWindow.DoInstallSoftware_Click($Sender1, $EventArgs1) 
     Enable-Ui -Enable $true
 }
 
-function Deploymentor.MainWindow.DoInstallActions_Click($Sender1, $EventArgs1) { 
-    if (($sender1 -ne 'AutoStart') -and  (Show-MessageBox "Are you sure you want to run all selected actions?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
+function Deploymentor.MainWindow.doInstallAll_Click($Sender1, $EventArgs1) {
+    $tasksActions = ($Elements.lvActions.items |? IsSelected -eq $true).Count
+    $tasksSoftware = ($Elements.lvSoftware.items |? IsSelected -eq $true).Count
+    if (($sender1 -ne 'AutoStart') -and (Show-MessageBox "Are you sure you want to run all selected actions ($tasksActions) and all selected software ($tasksSoftware)?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
 
     Reset-lastExecResults
     Reset-Progressbars
     
-    Enable-Ui -Enable $false
-    Invoke-Actions
-    Enable-Ui -Enable $true
+    Enable-Ui $false
+    
+    Write-Host "Total tasks: $($tasksActions + $tasksSoftware)" -ForegroundColor Green
+    
+    $af = $ctx.activeProfile.Data.actionsFirst -ne $false    
+    $counter = 0
+
+    If ($af) {
+        Invoke-Actions -Counter ([ref]$counter)
+        Invoke-Software -Counter ([ref]$counter)
+    }
+    else {
+        Invoke-Software -Counter ([ref]$counter)
+        Invoke-Actions -Counter ([ref]$counter)
+    }
+    
+    Enable-Ui $true
+    
+    Write-Host "Installing done." -ForegroundColor Green
 }
 
 function Deploymentor.MainWindow.BtnCancel_Click($Sender1, $EventArgs1) {
@@ -228,36 +255,6 @@ function Deploymentor.MainWindow.DoOpenConfig_Click($Sender1, $EventArgs1) {
 
 function Deploymentor.MainWindow.LbCopy_MouseDown($Sender1, $EventArgs1) {
     Start "mailto:repo+deploymentor@bananaacid.de"
-}
-
-function Deploymentor.MainWindow.doInstallAll_Click($Sender1, $EventArgs1) {
-
-    $actionsCount = $Elements.lvSoftware.SelectedItems.Count + $Elements.lvActions.SelectedItems.Count
-    $counter = 0
-
-    if (($sender1 -ne 'AutoStart') -and (Show-MessageBox "Are you sure you want to run all selected actions and all selected installations?" -Title "Really sure?"  -Buttons OkCancel -Type Warning) -ne "Ok") { return }
-    
-    Reset-lastExecResults
-    Reset-Progressbars
-    
-    Enable-Ui $false
-    
-    Write-Host "Total tasks: $actionsCount" -ForegroundColor Green
-    
-    $af = $ctx.activeProfile.Data.actionsFirst -ne $false
-    
-    If ($af) {
-        Invoke-Actions -Counter ([ref]$counter)
-        Invoke-Software -Counter ([ref]$counter)
-    }
-    else {
-        Invoke-Software -Counter ([ref]$counter)
-        Invoke-Actions -Counter ([ref]$counter)
-    }
-    
-    Enable-Ui $true
-    
-    Write-Host "Installing done." -ForegroundColor Green
 }
 
 function Deploymentor.MainWindow.LvTools_SelectionChanged($Sender1, $EventArgs1) {
@@ -335,7 +332,7 @@ Copy-Item $PSScriptRoot\window\MainWindow.xaml "$($dir.data)\MainWindow.xaml" -F
 $Elements,$MainWindow = . New-Window "$($dir.data)\MainWindow.xaml" # -Debug  # for debugging handlers and see error messages
 
 
-# --- Main functions ------------------------------------------
+# --- Main functions: Load ------------------------------------------
 
 
 # Preselect by param if available
@@ -752,8 +749,9 @@ Function Load-Tools {
             ".ps1" { # get its own console window and own session
                 $data = @{
                     type = "default"
-                    execFn = [scriptblock]::Create("param(`$ctx); start " + $current + @"
-                    -Verb RunAs " -ExecutionPolicy ByPass -Command ```"cd '$($item.DirectoryName)\' ; Import-Module ..\ps-modules\XAMLgui\ ; & '$($item.FullName)' `$ctx ; Read-Host 'Press Enter to close ...' ```" "
+                    execFn = [scriptblock]::Create(@"
+                    param(`$ctx)
+                    start $current -Verb RunAs " -ExecutionPolicy ByPass -Command ```"cd '$($item.DirectoryName)\' ; . '$($script:contextFNsFile)' ; & '$($item.FullName)' `$ctx ; Read-Host 'Press Enter to close ...' ```" "
 "@
                     )
                 }
@@ -802,7 +800,125 @@ Function Load-Tools {
 }
 
 
+# --- Main functions: Invokes --------------------------
 
+
+Function Invoke-Actions {
+    Param( $filter, [ref]$Counter )
+    
+    #! WARNING: this is not the same as $Elements.lvActions.SelectedItems - SelectedItems does not reliably contain all selected items - only if they have been selected by clicking (otherwise its random)
+    $selectedItems = $Elements.lvActions.items |? IsSelected -eq $true
+
+    Write-Host "Actions ($($selectedItems.Count))" -ForegroundColor Green
+    
+    # do actions, Value and Value2 are bound by the list item back into the data object, even if it did not have it in the first place
+    $i = 0
+    Foreach ($itemData in $selectedItems) { # only provides the data object
+        If ($ctx.doCancel) {Enable-Ui $true; return}
+        If ($global:DoCancel) {Enable-Ui $true; $global:DoCancel = $false; return}
+        
+        $i++
+        If ($Counter) { $Counter.Value++ }
+
+        Write-Host "Action #$i/$($selectedItems.Count) -> $($ItemData.FileName)(`"$($itemData.Value)`", `"$($itemData.Value2)`")" -ForegroundColor Green
+        
+        $ctx.item = @{
+            CtxId = $itemData.Id;
+            Folder=$itemData.Folder;
+            FilePath=$itemData.FilePath;
+            FileName=$itemData.FileName;
+        }
+        
+        $ctxRet = Start-AwaitJob $itemData.Data.installFn -ArgumentList $ctx,$itemData.Value,$itemData.Value2 -Dir $itemData.FilePath -InitBlock $script:contextFNs
+        $script:ctx.lastExecResults[$itemData.Id] = $ctXRet
+        
+        $Elements.pbActions.Value = $i
+    }
+
+    if ($selectedItems.Count) {
+        Invoke-BalloonTip $( $selectedItems | Join-String -Property 'FileName' -Separator ', ' )   "Actions done #$i/$($selectedItems.Count)"
+    }
+}
+
+Function Invoke-Software {
+    Param( $filter, [ref]$Counter )
+
+    #! WARNING: this is not the same as $Elements.lvSoftware.SelectedItems - SelectedItems does not reliably contain all selected items - only if they have been selected by clicking (otherwise its random)
+    $selectedItems = $Elements.lvSoftware.items |? IsSelected -eq $true
+
+    Write-Host "Apps ($($selectedItems.Count))" -ForegroundColor Green
+    
+    # do apps
+    $i = 0
+    Foreach ($itemData in $selectedItems) {
+        If ($ctx.doCancel) {Enable-Ui $true; return}
+        If ($global:DoCancel) {Enable-Ui $true; $global:DoCancel = $false; return}
+        
+        $i++
+        If ($Counter) { $Counter.Value++ }
+        
+        Write-Host "Installing #$i/$($selectedItems.Count) -> $($itemData.FileName)" -ForegroundColor Green
+        
+        $ctx.item = @{
+            CtxId = $itemData.Id;
+            Folder=$itemData.Folder;
+            FilePath=$itemData.FilePath;
+            FileName=$itemData.FileName;
+        }
+
+        $ctxType = $itemData.Data.ctxType
+        if (!$ctxType) {
+            $ctxType = Get-CtxTypeByFilename $itemData.FileName
+        }
+        $ctxConverted = Convert-Ctx $ctx -Type $ctxType
+        
+        # Unblocking the UI !
+        $ctxRet = Start-AwaitJob $itemData.Data.installFn -ArgumentList $($ctxConverted) -Dir $itemData.FilePath -InitBlock $script:contextFNs
+        $script:ctx.lastExecResults[$itemData.Id] = $ctXRet
+        
+        Invoke-BalloonTip $itemData.FileName "App done #$i/$($selectedItems.Count)"
+        
+        $Elements.pbSoftware.Value = $i
+    }
+}
+
+Function Invoke-Tool {
+    Param( $itemData )
+    
+    Write-Host "Starting Tool $($itemData.Id) - $($itemData.Type)"
+
+    try {
+        $ctx.item = @{
+            CtxId = $itemData.Id;
+            Folder=$itemData.Folder;
+            FilePath=$itemData.FilePath;
+            FileName=$itemData.FileName;
+        }
+
+        $ctxType = $itemData.Data.CtxType
+        if (!$ctxType) {
+            $ctxType = Get-CtxTypeByFilename $itemData.FileName
+        }
+        $ctxConverted = Convert-Ctx $ctx -Type $ctxType
+
+        #execute command
+        if ($itemData.Data.type -eq "psx") {
+            $ctxRet = Start-AwaitJob $itemData.Data.execFn -ArgumentList $($ctxConverted) -Dir $itemData.FilePath -InitBlock $script:contextFNs
+            $script:ctx.lastExecResults[$itemData.Id] = $ctXRet
+        }
+        else {
+            # context info for all
+            & $itemData.data.execFn $ctxConverted
+        }
+    }
+    catch {
+        Write-ErrorClean ("Error executing tool: " + $itemData.Id)
+        Write-Error $_
+    }
+}
+
+
+# --- Helpers --------------------------
 
 
 Function Handle-AutoStart {
@@ -994,121 +1110,6 @@ Function Convert-Ctx {
     }
     
     return $ctxConverted
-}
-
-
-Function Invoke-Actions {
-    Param( $filter, [ref]$Counter )
-    
-    #! WARNING: this is not the same as $Elements.lvActions.SelectedItems - SelectedItems does not reliably contain all selected items - only if they have been selected by clicking (otherwise its random)
-    $selectedItems = $Elements.lvActions.items |? IsSelected -eq $true
-
-    Write-Host "Actions ($($selectedItems.Count))" -ForegroundColor Green
-    
-    # do actions, Value and Value2 are bound by the list item back into the data object, even if it did not have it in the first place
-    $i = 0
-    Foreach ($itemData in $selectedItems) { # only provides the data object
-        If ($ctx.doCancel) {Enable-Ui $true; return}
-        If ($global:DoCancel) {Enable-Ui $true; $global:DoCancel = $false; return}
-        
-        $i++
-        If ($Counter) { $Counter.Value++ }
-
-        Write-Host "Action #$i/$($selectedItems.Count) -> $($ItemData.FileName)(`"$($itemData.Value)`", `"$($itemData.Value2)`")" -ForegroundColor Green
-        
-        $ctx.item = @{
-            CtxId = $itemData.Id;
-            Folder=$itemData.Folder;
-            FilePath=$itemData.FilePath;
-            FileName=$itemData.FileName;
-        }
-        
-        $ctxRet = Start-AwaitJob $itemData.Data.installFn -ArgumentList $ctx,$itemData.Value,$itemData.Value2 -Dir $itemData.FilePath -InitBlock $script:contextFNs
-        $script:ctx.lastExecResults[$itemData.Id] = $ctXRet
-        
-        $Elements.pbActions.Value = $i
-    }
-
-    if ($selectedItems.Count) {
-        Invoke-BalloonTip $( $selectedItems | Join-String -Property 'FileName' -Separator ', ' )   "Actions done #$i/$($selectedItems.Count)"
-    }
-}
-
-Function Invoke-Software {
-    Param( $filter, [ref]$Counter )
-
-    #! WARNING: this is not the same as $Elements.lvSoftware.SelectedItems - SelectedItems does not reliably contain all selected items - only if they have been selected by clicking (otherwise its random)
-    $selectedItems = $Elements.lvSoftware.items |? IsSelected -eq $true
-
-    Write-Host "Apps ($($selectedItems.Count))" -ForegroundColor Green
-    
-    # do apps
-    $i = 0
-    Foreach ($itemData in $selectedItems) {
-        If ($ctx.doCancel) {Enable-Ui $true; return}
-        If ($global:DoCancel) {Enable-Ui $true; $global:DoCancel = $false; return}
-        
-        $i++
-        If ($Counter) { $Counter.Value++ }
-        
-        Write-Host "Installing #$i/$($selectedItems.Count) -> $($itemData.FileName)" -ForegroundColor Green
-        
-        $ctx.item = @{
-            CtxId = $itemData.Id;
-            Folder=$itemData.Folder;
-            FilePath=$itemData.FilePath;
-            FileName=$itemData.FileName;
-        }
-
-        $ctxType = $itemData.Data.ctxType
-        if (!$ctxType) {
-            $ctxType = Get-CtxTypeByFilename $itemData.FileName
-        }
-        $ctxConverted = Convert-Ctx $ctx -Type $ctxType
-        
-        # Unblocking the UI !
-        $ctxRet = Start-AwaitJob $itemData.Data.installFn -ArgumentList $($ctxConverted) -Dir $itemData.FilePath -InitBlock $script:contextFNs
-        $script:ctx.lastExecResults[$itemData.Id] = $ctXRet
-        
-        Invoke-BalloonTip $itemData.FileName "App done #$i/$($selectedItems.Count)"
-        
-        $Elements.pbSoftware.Value = $i
-    }
-}
-
-Function Invoke-Tool {
-    Param( $itemData )
-    
-    Write-Host "Starting Tool $($itemData.Id) - $($itemData.Type)"
-
-    try {
-        $ctx.item = @{
-            CtxId = $itemData.Id;
-            Folder=$itemData.Folder;
-            FilePath=$itemData.FilePath;
-            FileName=$itemData.FileName;
-        }
-
-        $ctxType = $itemData.Data.CtxType
-        if (!$ctxType) {
-            $ctxType = Get-CtxTypeByFilename $itemData.FileName
-        }
-        $ctxConverted = Convert-Ctx $ctx -Type $ctxType
-
-        #execute command
-        if ($itemData.Data.type -eq "psx") {
-            $ctxRet = Start-AwaitJob $itemData.Data.execFn -ArgumentList $($ctxConverted) -Dir $itemData.FilePath -InitBlock $script:contextFNs
-            $script:ctx.lastExecResults[$itemData.Id] = $ctXRet
-        }
-        else {
-            # context info for all
-            & $itemData.data.execFn $ctxConverted
-        }
-    }
-    catch {
-        Write-ErrorClean ("Error executing tool: " + $itemData.Id)
-        Write-Error $_
-    }
 }
 
 

@@ -249,7 +249,7 @@ installFn = {
 
     $contextFormat = @{
         "deploy.ps1" = "native" # special case - software installer runs in same session
-        ".ps1" = "nativefile"   # is a temp xmlfile with types to be able to convert it back (using Import-CliXml) - relevant for tools - they run in a separate session
+        ".ps1" = "nativefile"   # is a temp xmlfile with types to be able to convert it back (using Import-CliXml) - relevant for tools - they run in a separate session as admin (UAC might popup)
         ".x.ps1" = "native"     # tool in same session -- works like an action or software (should be avoided)
         ".vbs" = "xml"          # xml str as param 1 to script (probably buggy)
         ".wsf" = "xml"          # xml str as param 1 to script (probably buggy)
@@ -385,8 +385,8 @@ The tool gets the context passed as first param, see `config.ps1` -> `$contextFo
 ⚠️ Windows must know about the file extension to be able to launch it - anything that can be double clicked will work.
 
 #### Difference: .ps1 and .x.ps1
-- `.ps1` will be launched in an isolated terminal but gets a copy of the context
-- `.x.ps1` will be launcehd in the same session - like an action or software script
+- `.ps1` will be launched in an isolated terminal as an admin (UAC might popup), and gets an immutable copy of the context - preferred
+- `.x.ps1` will be launcehd in the same session - like an action or software script - not preferred - might have elevation problems, due to not being an admin 
 
 ### \window
 The Visual Studio project solution. This houses the MainWindow.xaml and all required files, to edit it visually in Visual Studio.
