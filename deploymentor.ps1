@@ -700,6 +700,9 @@ Function Load-Actions {
         If ($null -ne $data.title) {
             $title = $data.title
         }
+        If ($null -ne $data.title2) {
+            $title2 = $data.title2
+        }
         if ($textBoxVisibility2 -eq "Visible" -and ($null -eq $data.title2) -and $title -match "`n") {
             $title, $title2 = $title -split "`n"
         }

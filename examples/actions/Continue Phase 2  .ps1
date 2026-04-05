@@ -1,6 +1,8 @@
 @{
-    Title = "User`nPassowrd"  # User will be next to Value and because of the newline, Password next to Value2
-    Description = "Continue Phase 2"
+    Title = "Relogin User"
+    Title2 = "Password"
+    
+    Description = "Continue Phase 2, after reboot"
 
     hasValue = $true
     Value = $env:USERNAME
