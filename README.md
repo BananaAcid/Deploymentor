@@ -105,6 +105,11 @@ Params:
         Start-Deploymentor -Config .\Deploymentor-MainLocation\data\config.ps1
         ```
 
+# Helper to create Actions
+
+There is the **tool** `create action with AI` included in the examples (see *Run with example data* above), that creates Actions using AI. A temporary key is included, but depending on how many people will be using this tool, the hourly limit might be reached. If no key is found, you can also select the option to connect to your own Pollinations account and use the free LLMs (GitHub account required for free registration).
+
+Pollinations.ai says, its GDPR compliant https://enter.pollinations.ai/privacy - but: Never enter passwords or sensetive data.
 
 # Structure
 
@@ -153,19 +158,21 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
 - `\Action name or title.ps1`
     ```ps1
     return @{
-
         # newline `n can be used, if you want to output 2 lables (1st row for first inputbox, 2nd row for second inputbox) with just 1 title.
-        title = "Title`nMessage" #optional: if not given, the files's name is used. If newline is used, It gets split into tile and title2
-
+        title = "Title" #optional: if not given, the files's name is used. If newline is used, It gets split into tile and title2
+        
+        # newline `n can be used, if you want to output 2 rows of information.
         description = "Shows a messagebox" #optional: detault is empty
 
-        isSelected = $TRUE  #optional: default is false, only used if a profile does not specify this
+        isSelected = $FALSE  #optional: default is false, only used if a profile does not specify this.
 
-        hasValue = $TRUE   #optional: shows a text field next to the value
+        # only use if a manual input of this value is needed, this will be passed to the installFn after $ctx as value var
+        hasValue = $TRUE   #optional: shows a textbox next to the value for manual input in the GUI. If true, the 'title=' (from above) is next to the textbox in the GUI
         Value = "Title"  #optional: if given, the textbox will be prefilled
 
-        #title2 = "Message" #optional: shows a title for this value
-        hasValue2 = $TRUE   #optional: shows a text field next to the value
+        # only use if a manual input of this value is needed, this will be passed to the installFn after the first value var
+        title2 = "Message" #optional: shows a title for this value
+        hasValue2 = $TRUE   #optional: shows a textbox next to the value for manual input in the GUI
         Value2 = "Message"  #optional: if given, the textbox will be prefilled
 
 
@@ -176,7 +183,8 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
 
         # required
         installFn = {
-            param($ctx, [string]$title, [string]$message)
+            # $ctx is mandatory (and must always be the first param named $ctx), optional values only if needed
+            param($ctx, <#Value#>[string]$title, <#Value2#>[string]$message)
             
             # Import another module from the main ps-modules folder.
             #Import-LocalModule SomeOtherImportantModule -Path ..\ps-modules
@@ -186,6 +194,8 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
             # you have access to all of XAMLGui, ConvertTo-NiceXml, native Expand-Archive (un-zip), ...
 
             Write-Host "Messagebox: $title`n$message" # always log to console as well!
+
+            # Only use a messagebox, if something dangerous is going to happen
             Show-MessageBox $message $title
         }
     }
