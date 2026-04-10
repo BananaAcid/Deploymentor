@@ -14,6 +14,9 @@ if ($ctx) {
     Import-LocalModule PollinationsAiPS
 
     Write-Host "_Get-PollinationsAiTextEx available:_", (get-command Get-PollinationsAiTextEx | out-string)
+
+    Import-LocalModule Create-Menu
+    # Write-Host "_Create-Menu available:_", (get-command Create-Menu | out-string)
 }
 # manually started from command line
 else {
@@ -23,18 +26,21 @@ else {
     $ctx = @{dir = @{actions = "$PSScriptRoot" }}
 
     Import-Module PollinationsAiPS
+
+    Import-Module Create-Menu
 }
 
 #write-host "Get-PollinationsAiTextEx: ", (Test-Path Function:Get-PollinationsAiTextEx)
 
 
-# load Create-Menu and instantiate it
-#Write-Host "_Create-Menu available:_", (New-Module -Name "Create Menu TUI" -ScriptBlock ([Scriptblock]::Create((New-Object System.Net.WebClient).DownloadString("https://gist.githubusercontent.com/BananaAcid/b8efca90cc6ca873fa22a7f9b98d918a/raw/cab61f5a367c73aead7bdf425cc784338efaab27/Create-Menu.ps1"))) | out-string)
-$createMenuFile = "$($ctx.dir.psmodules)\Create-Menu.ps1"
-If (-not (Test-Path "$createMenuFile")) {
-    Invoke-WebRequest "https://gist.githubusercontent.com/BananaAcid/b8efca90cc6ca873fa22a7f9b98d918a/raw/cab61f5a367c73aead7bdf425cc784338efaab27/Create-Menu.ps1" -OutFile "$createMenuFile"
-}
-New-Module -Name "Create Menu TUI" -ScriptBlock ([Scriptblock]::Create((Get-Content "$createMenuFile" -raw))) | Out-Null
+# load Create-Menu and instantiate it from GIST.GITHUB
+# #Write-Host "_Create-Menu available:_", (New-Module -Name "Create Menu TUI" -ScriptBlock ([Scriptblock]::Create((New-Object System.Net.WebClient).DownloadString("https://gist.githubusercontent.com/BananaAcid/b8efca90cc6ca873fa22a7f9b98d918a/raw/cab61f5a367c73aead7bdf425cc784338efaab27/Create-Menu.ps1"))) | out-string)
+# $createMenuFile = "$($ctx.dir.psmodules)\Create-Menu.ps1"
+# If (-not (Test-Path "$createMenuFile")) {
+#     Invoke-WebRequest "https://gist.githubusercontent.com/BananaAcid/b8efca90cc6ca873fa22a7f9b98d918a/raw/cab61f5a367c73aead7bdf425cc784338efaab27/Create-Menu.ps1" -OutFile "$createMenuFile"
+# }
+# New-Module -Name "Create Menu TUI" -ScriptBlock ([Scriptblock]::Create((Get-Content "$createMenuFile" -raw))) | Out-Null
+
 
 
 
@@ -46,7 +52,7 @@ $noKey = $false
 $key = $env:POLLINATIONSAI_API_KEY
 # warn if no key, to use Get-PollinationsAiByok to set one up
 if (-not $key -or $noKey) {
-    switch ( Create-Menu -Title { Write-Host "No Pollinations.ai API key found" -ForegroundColor Yellow } -Options "Use Temp Key","Enter your own key (temporary)","Connect your Pollinations account (BYOK)"  -MaximumColumnWidth ($Host.UI.RawUI.MaxWindowSize.Width -2) ) {
+    switch ( Create-Menu -Title "No Pollinations.ai API key found`n" -ForegroundColor Yellow -Options "Use Temp Key","Enter your own key (temporary)","Connect your Pollinations account (BYOK)"  -MaximumColumnWidth ($Host.UI.RawUI.MaxWindowSize.Width -2) ) {
         0 { $key = 'sk_05Ray2pZpHdnQLq5wkJTBxNM7JH09Eqj' } # selected models by me only.
         1 { $key = Read-Host "Enter your Pollinations.ai API key temporary" }
         2 { Get-PollinationsAiByok }
@@ -65,15 +71,16 @@ if (-not $model) {
     Write-Host "`n`n"
     $models = 'nova-fast', 'qwen-coder'  #'polly'
     $modelsTitles = 'Amazon Nova Micro (nova-fast, quick and simple results)', 'Qwen3 Coder 30B (qwen-coder, slower and complex results)', 'all models ...' #, 'Polly (polly, very slow and good for really complex tasks, can search the web - only few uses)'
-    $modelSel = $modelsTitles | Create-Menu -Title "Select model:" -MaximumColumnWidth ($Host.UI.RawUI.MaxWindowSize.Width -2) # make it a vertical menu
+    $modelSel = $modelsTitles | Create-Menu -Title "Select model:`n" -MaximumColumnWidth ($Host.UI.RawUI.MaxWindowSize.Width -2) # make it a vertical menu
     $model = $models[$modelSel]
     Write-Host "`n`n"
 
     if (-not $model) {
-        $models = Get-PollinationsAiTextEx -List -Details -AvailableOnlyList -POLLINATIONSAI_API_KEY $key
-        $modelsTitles = $models |% { $(if ($_.aliases[0]) { $_.aliases[0] } else { $_.name }) }
-        $modelSel = $modelsTitles | Create-Menu -Title "Select model:" -Footer "Models: https://enter.pollinations.ai/. Only those are shown, that you have enabled with your API KEY."
-        $model = $models[$modelSel].name
+        # yes Global: because the scriptblocks are imported as string into the module scope of Create-Menu to have access the required vars - so we need to use Global: to pass $models in to the module scopes scriptblock
+        $Global:models = Get-PollinationsAiTextEx -List -Details -AvailableOnlyList -POLLINATIONSAI_API_KEY $key
+        $modelsTitles = $Global:models |% { $(if ($_.aliases[0]) { $_.aliases[0] } else { $_.name }) }
+        $modelSel = $modelsTitles | Create-Menu -Title "Select model:`n" -Footer { "⭐ $(($Global:models |? {$_.Name -eq $SelectionValue -or $_.aliases -contains $SelectionValue } | Select -First 1).description)`nModels: https://enter.pollinations.ai/. Only those are shown, that you have enabled with your API KEY." }
+        $model = $Global:models[$modelSel].name
     }
 }
 
@@ -220,7 +227,7 @@ do {
 
         Write-Host "`nMake sure you check the file content before running it!`n" -ForegroundColor Yellow
 
-        switch (Create-Menu -TItle "Open file now?" -Options "No", "VSCode", "Notepad") {
+        switch (Create-Menu -Title "Open file now?`n" -Options "No", "VSCode", "Notepad") {
             1 { Start-Process "code" "$($ctx.dir.actions)\$filename" }
             2 { Start-Process "notepad.exe" "$($ctx.dir.actions)\$filename" }
             default { }
