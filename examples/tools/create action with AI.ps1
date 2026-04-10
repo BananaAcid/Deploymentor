@@ -71,7 +71,7 @@ if (-not $model) {
     Write-Host "`n`n"
     $models = 'nova-fast', 'qwen-coder'  #'polly'
     $modelsTitles = 'Amazon Nova Micro (nova-fast, quick and simple results)', 'Qwen3 Coder 30B (qwen-coder, slower and complex results)', 'all models ...' #, 'Polly (polly, very slow and good for really complex tasks, can search the web - only few uses)'
-    $modelSel = $modelsTitles | Create-Menu -Title "Select model:`n" -MaximumColumnWidth ($Host.UI.RawUI.MaxWindowSize.Width -2) # make it a vertical menu
+    $modelSel = $modelsTitles | Create-Menu -Title "Select model:`n" -Columns 1 -MaximumColumnWidth ($Host.UI.RawUI.MaxWindowSize.Width -2) # make it a vertical menu
     $model = $models[$modelSel]
     Write-Host "`n`n"
 
