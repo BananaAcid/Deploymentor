@@ -191,7 +191,7 @@ Use `$global:DoCancel = $false` within software (only in deploy.ps1) or action.
             # using `Import-LocalModule`, the module will be downloaded into .\ps-modules if missing
 
             # Some Modules and functions are preloaded,
-            # you have access to all of XAMLGui, ConvertTo-NiceXml, native Expand-Archive (un-zip), ...
+            # you have access to all of XAMLGui (Gui functions itself do not work (needs STA!)), ConvertTo-NiceXml, native Expand-Archive (un-zip), ...
 
             Write-Host "Messagebox: $title`n$message" # always log to console as well!
 
@@ -217,21 +217,24 @@ installFn = {
 
 Any folder that should be listed in the software list. See `config.ps1` -> `$softwareInstallers` to see what files will be looked for to determine if there is an installer or deploy script to run and `$contextFormat` how the 1st params gets context formatted. The scripts can either contain code or just install the exe with silent params.
 
+`install.ps1` is a special Deploymentor file case: is parsed for additional info, must return: installFn, should return: description<br>
+`deploy.ps1` is just a regular script (is not parsed by Deploymentor for info)
+
 - `\...application name...`
     
     - ... any $softwareInstallers file type
 
-    - **using `deploy.ps1`:**
-        - `\Reader_en_install.exe` (for the deploy.ps1 script)
-        - `\deploy.ps1`
+    - **using `insatall.ps1`:**
+        - `\Reader_en_install.exe` (for the install.ps1 script)
+        - `\install.ps1`
             ```ps1
             return @{
 
                 title="Acrobat Reader" #optional: if not given, the folder's name is used
 
-                description = "Version 2025.001.21223" #optional: detault is empty
+                description = "Version 2025.001.21223" #optional: detault is "Running as Deploymentor Script"
 
-                icon = ".\Reader_en_install.exe" #optional: default is default-app.png
+                icon = ".\Reader_en_install.exe" #optional: default is \data\default-app.png
 
                 isSelected = $TRUE  #optional: default is false, only used if a profile does not specify this
 
@@ -453,6 +456,10 @@ On every run, a new logfile will be created in the .\log folder. This can not be
 
 - `yyyy-MM-dd_HH-mm-ss.log`
 
+# Usage of XAMLgui
+
+Currently, only Tools can use the *GUI creating functions* of `XAMLgui`, since launching in a Job (everything except Tools with `.ps1`) does not work.
+
 # `$ctx` - Context passed into actions/softwares/tools
 
 ```ps1
@@ -462,6 +469,12 @@ $ctx = @{
         File = $null    # current profile filename path
         Title = $null   # the displayed title
         Data = $null    # the profile files returned settings content
+        Index = 0       # the index of the currently selected profile
+    }
+    deploymentor = @{           # data of the currently running deploymentor
+        Root = $PSScriptRoot    # installation root folder
+        File = $PSCommandPath   # installation filename path
+        Version = $VERSION      # deploymentor version, if available
     }
     item = $null        # @{ Folder = $dir.software; FilePath; FileName; }
     lastExecResult = @{ # may contain content returned from an action / software

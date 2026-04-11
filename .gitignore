@@ -1,14 +1,11 @@
 .history
 __TODO.*
-test-*.*
 *.exe
 *.zip
 *.7z
 *.msi
 *.msi*
 *.code-workspace
-test-*
-test-*.*
 build
 dist
 
@@ -22,7 +19,12 @@ examples/data/MainWindow.xaml
 # visual studio
 window/.vs
 window/obj
+window/bin
 
+# test data
+test-*
+test-*.*
+EML Files
 
 # Logs
 logs

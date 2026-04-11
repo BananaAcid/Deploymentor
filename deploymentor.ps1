@@ -530,11 +530,14 @@ Function Load-Software {
                 $deploymentFilePath = $deploymentFilePath | gi
                 
                 Switch ($typeValue) {
-                    # is parsed for additional info, special Deploymentor file: must return Description, installFn
+                    # is parsed for additional info, special Deploymentor file: must return: installFn, should return: description
                     "dpx" {
                         $data = & $deploymentFilePath
                         if (-not $data.ctxType) {
                             $data.ctxType = "native"
+                        }
+                        if (-not $data.description) {
+                            $data.Description = "Running as Deploymentor Script"
                         }
                     }
                     "ps" {

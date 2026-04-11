@@ -156,7 +156,6 @@ You must use the following template (and no code-fencing blocks):
 {{whatToCreate}}
 '@
 
-Write-Host ""
 Write-Host @'
 Example prompts:
 
@@ -170,23 +169,49 @@ Example prompts:
 
     Remove all installed Office versions
 
-    read these first: https://context7.com/bananaacid/xamlgui/llms.txt . Then create a window that asks for some text (text area) and lets choose a path (file dialog) to save to (filename prefilled with actions input value)
-    (Pollynations.AI Polly / Google Gemini 2.5 Flash Lite is required, due to needing to be able to search the web)
-
+    Read these first: https://context7.com/bananaacid/PollinationsAIPS/llms.txt . Import-LocalModule PollinationsAiPS, and then use it to create an Email to send to support@example.com (this should be the default action's Value), with a text about successfully deployed the current computer (include the computer name, domain and a list of existing users on the computer).
+    (Pollynations.AI Polly / Google Gemini 2.5 Flash Lite is required, due to be able to access the web)
 '@
 
+Write-Host "`n`n`n"
 
-$whatToCreate = Read-Host "What action do you want to create"
+Write-Host "('-' to use notepad to enter text, emtpy to exit)" -ForegroundColor DarkGreen
+#$Host.UI.RawUI.CursorPosition = @{X= 0; Y= $Host.UI.RawUI.CursorPosition.Y -2}
+Write-Host "What action do you want to create" -ForegroundColor Yellow -NoNewline
+$whatToCreate = Read-Host " "
+$whatToCreate = $whatToCreate.Trim()
 
-if ($whatToCreate.Trim() -eq "") {
+if ($whatToCreate -eq "-") {
+    #$whatToCreate = Get-Clipboard
+
+    $path = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath ([System.IO.Path]::GetRandomFileName())
+    Write-Host "In Notepad, enter the prompt for what action to create ($path)"
+
+    New-Item -Path $path -ItemType File -Force | Out-Null
+
+    # open notepad with the file, and let the user edit it, and wait for it to close
+    $p = Start-Process -FilePath notepad.exe -ArgumentList $path -PassThru -Wait
+    $whatToCreate = Get-Content -Path $path -Raw
+    
+    $whatToCreate = $whatToCreate.Trim() -replace "`r`n", "`n"
+
+    Write-Host "Content: -----------------------------------------------------------------------" -ForegroundColor DarkGray
+    Write-Host "$whatToCreate" -ForegroundColor DarkGray
+    Write-Host "--------------------------------------------------------------------------------" -ForegroundColor DarkGray
+
+}
+
+if ([string]::IsNullOrWhiteSpace($whatToCreate)) {
+    Write-Host "No action to create, exiting"
     return
 }
+
 
 $content = $systemPrompt -replace "{{whatToCreate}}", $whatToCreate
 
 do {
 
-    Write-Host "This can really take a while, please wait..."
+    Write-Host "`n`nThis can really take a while, please wait...`n`n"
 
     try {
         $result = Get-PollinationsAiTextEx -Content $content -Model $model -POLLINATIONSAI_API_KEY $key -bypassCache
