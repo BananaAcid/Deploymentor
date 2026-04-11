@@ -70,7 +70,7 @@ $model = $env:POLLINATIONSAI_API_MODEL
 if (-not $model) {
     Write-Host "`n`n"
     $models = 'nova-fast', 'qwen-coder'  #'polly'
-    $modelsTitles = 'Amazon Nova Micro (nova-fast, quick and simple results)', 'Qwen3 Coder 30B (qwen-coder, slower and complex results)', 'all models ...' #, 'Polly (polly, very slow and good for really complex tasks, can search the web - only few uses)'
+    $modelsTitles = 'Amazon Nova Micro (nova-fast, quick and simple results)', 'Qwen3 Coder 30B (qwen-coder, slower and complex results)', 'All available models ...' #, 'Polly (polly, very slow and good for really complex tasks, can search the web - only few uses)'
     $modelSel = $modelsTitles | Create-Menu -Title "Select model:`n" -Columns 1 -MaximumColumnWidth ($Host.UI.RawUI.MaxWindowSize.Width -2) # make it a vertical menu
     $model = $models[$modelSel]
     Write-Host "`n`n"
@@ -170,6 +170,9 @@ Example prompts:
 
     Remove all installed Office versions
 
+    read these first: https://context7.com/bananaacid/xamlgui/llms.txt . Then create a window that asks for some text (text area) and lets choose a path (file dialog) to save to (filename prefilled with actions input value)
+    (Pollynations.AI Polly / Google Gemini 2.5 Flash Lite is required, due to needing to be able to search the web)
+
 '@
 
 
@@ -228,8 +231,8 @@ do {
         Write-Host "`nMake sure you check the file content before running it!`n" -ForegroundColor Yellow
 
         switch (Create-Menu -Title "Open file now?`n" -Options "No", "VSCode", "Notepad") {
-            1 { Start-Process "code" "$($ctx.dir.actions)\$filename" }
-            2 { Start-Process "notepad.exe" "$($ctx.dir.actions)\$filename" }
+            1 { Start-Process "code" "'$($ctx.dir.actions)\$filename'" }
+            2 { Start-Process "notepad.exe" "'$($ctx.dir.actions)\$filename'" }
             default { }
         }
 
